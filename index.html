@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>住宅間取り 課題設定アプリ</title>
+<style>
+  :root {
+    --bg: #0b1120; --panel: #111a2e; --panel2: #0f172a; --line: #26324d; --text: #e2e8f0; --muted: #94a3b8;
+    --accent: #6366f1; --accent2: #10b981; --warn: #f59e0b; --bad: #f43f5e;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
+  header { position: sticky; top: 0; z-index: 10; background: rgba(11,17,32,.95); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  header .sp { flex: 1; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  section.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+  section.card h2 { margin: 0 0 10px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  section.card h2 .n { background: var(--accent); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
+  label.f { display: block; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  input[type=text], input[type=number], select, textarea { width: 100%; background: var(--panel2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 14px; min-height: 38px; font-family: inherit; }
+  textarea { min-height: 70px; resize: vertical; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+  .row { display: grid; gap: 10px; }
+  .r2 { grid-template-columns: 1fr 1fr; } .r3 { grid-template-columns: 1fr 1fr 1fr; } .r4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 560px) { .r3, .r4 { grid-template-columns: 1fr 1fr; } }
+  .cond { display: grid; grid-template-columns: 24px minmax(0,1fr) auto 84px; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px dashed var(--line); }
+  .cond:first-of-type { border-top: none; }
+  .cond .nm { font-weight: 600; } .cond .nm small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; }
+  .cond .val { display: flex; align-items: center; gap: 6px; }
+  .cond .val input, .cond .val select { width: 90px; }
+  .cond .pt { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+  .cond .pt input { width: 56px; }
+  .cond.park .val { grid-column: 2 / 4; grid-row: 2; flex-wrap: nowrap; white-space: nowrap; } .cond.park .pt, .cond.park > input, .cond.park .nm { grid-row: 1; } .cond.park .pt { grid-column: 4; } .cond.park .val input { width: 54px; } .cond.park .val select { width: 60px; }
+  .cond.area .val { grid-column: 2 / 4; grid-row: 2; flex-wrap: wrap; } .cond.area .pt, .cond.area > input, .cond.area .nm { grid-row: 1; } .cond.area .val .note { flex-basis: 100%; } .cond.area .val select { width: 116px; } .cond.area .pt { grid-column: 4; }
+  input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent2); }
+  .cond.off .nm, .cond.off .val, .cond.off .pt { opacity: .35; }
+  button { font-family: inherit; cursor: pointer; border: 1px solid var(--line); background: #1e293b; color: var(--text); border-radius: 9px; padding: 8px 14px; font-size: 13px; font-weight: 600; min-height: 38px; }
+  button:hover { background: #273449; }
+  button.pri { background: var(--accent); border-color: #818cf8; color: #fff; }
+  button.pri:hover { background: #4f46e5; }
+  button.ok { background: #047857; border-color: #10b981; color: #fff; }
+  button.ok:hover { background: #059669; }
+  button.sm { padding: 4px 10px; min-height: 30px; font-size: 12px; }
+  button.del { color: #fda4af; }
+  table.rooms { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.rooms th { text-align: left; color: var(--muted); font-size: 11px; font-weight: 600; padding: 2px 4px; }
+  table.rooms td { padding: 3px 4px; vertical-align: middle; }
+  table.rooms input, table.rooms select { min-height: 34px; padding: 4px 6px; }
+  .roomsWrap { overflow-x: auto; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  aside .card { position: relative; }
+  .sumline { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; font-size: 13px; border-bottom: 1px dotted var(--line); }
+  .sumline b { color: #fff; text-align: right; }
+  .note { color: var(--muted); font-size: 12px; }
+  .big { font-size: 22px; font-weight: 800; color: #fff; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; background: #312e81; color: #c7d2fe; }
+  .pill.g { background: #064e3b; color: #a7f3d0; } .pill.w { background: #78350f; color: #fde68a; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #0f172a; border: 1px solid var(--accent); padding: 10px 16px; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 50; max-width: 90vw; }
+  #toast.on { opacity: 1; }
+  .kindBtn { text-align: left; padding: 10px 12px; font-size: 14px; font-weight: 700; } .kindBtn small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); margin-top: 2px; } .kindBtn.on { background: #6366f1; color: #fff; border-color: #a5b4fc; } .kindBtn.on small { color: #e0e7ff; }
+  dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 14px; max-width: 560px; width: calc(100vw - 32px); padding: 16px; }
+  dialog::backdrop { background: rgba(2,6,23,.7); }
+  dialog textarea { min-height: 140px; font-family: ui-monospace, monospace; font-size: 12px; }
+  svg text { font-family: inherit; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎯 住宅設計 課題設定アプリ</h1>
+  <span class="sub" id="subTxt">設計条件を設定して、生徒のアプリに配布します</span>
+  <span class="sp"></span>
+  <button id="btnOpen">📂 課題を読み込んで編集</button>
+  <button id="btnCode" class="pri">📋 課題コードを作る</button>
+  <button id="btnDownload" class="ok">💾 課題ファイルを書き出す</button>
+</header>
+
+<main>
+<div>
+  <section class="card" style="padding:10px 14px">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:700">課題の種類</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
+      <button id="kindBoth" type="button" class="kindBtn">🔗 連動課題(配置計画→間取り)<small>1つの課題で両方のアプリに配布</small></button>
+      <button id="kindMadori" type="button" class="kindBtn">🏠 間取り課題<small>住宅間取り作成トレーニング用</small></button>
+      <button id="kindHaichi" type="button" class="kindBtn">🧩 配置計画・ブロックプラン課題<small>住宅配置計画トレーニング用</small></button>
+    </div>
+  </section>
+  <section class="card">
+    <h2><span class="n">1</span>課題の基本情報</h2>
+    <label class="f">課題名<input type="text" id="title" placeholder="例: 課題4 旗竿地の3人家族住宅" maxlength="60"></label>
+    <label class="f">課題の説明(生徒に表示されます)<textarea id="desc" placeholder="例: 夫婦＋子ども1人のための2階建て住宅。駐車は1台。LDKは南側に配置し、家事動線を考慮すること。"></textarea></label>
+    <label class="f">作成者・クラス(任意)<input type="text" id="author" maxlength="40" autocomplete="off" autocorrect="off" name="kadai-author-x"></label>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">2</span>敷地条件(敷地面積・接道・道路幅員)</h2>
+    <div class="row r2">
+      <label class="f">接道の形<select id="pattern"></select></label>
+      <label class="f">マス目の基準(モジュール)<select id="grid"><option value="shaku">尺モジュール(1マス=910mm)</option><option value="meter">メーターモジュール(1マス=1000mm)</option><option value="custom">カスタム(1マスの寸法を入力)</option></select><span id="gridNote" class="hint" style="display:none"></span></label>
+      <label class="f" id="gridCustomWrap" style="display:none">1マスの寸法(mm)<input type="number" id="gridMm" min="500" max="2000" step="10" value="910"></label>
+    </div>
+    <div id="stdDims" class="row r2">
+      <label class="f">敷地の幅(マス)<input type="number" id="sw" min="6" max="40" step="1" value="12"></label>
+      <label class="f">敷地の奥行(マス)<input type="number" id="sh" min="6" max="24" step="1" value="12"></label>
+    </div>
+    <div id="flagDims" class="row r3" style="display:none">
+      <label class="f">旗部の幅(マス)<input type="number" id="fw" min="4" max="30" value="8"></label>
+      <label class="f">旗部の奥行(マス)<input type="number" id="fh" min="4" max="20" value="8"></label>
+      <label class="f">竿の幅(マス)<input type="number" id="fpw" min="2" max="8" value="4"></label>
+      <label class="f">竿の位置(左から・マス)<input type="number" id="fpx" min="0" max="30" value="0"></label>
+      <label class="f">竿の長さ(マス)<input type="number" id="fph" min="2" max="12" value="5"></label>
+    </div>
+    <div id="roadRow" class="row r4"></div>
+    <div class="note" style="margin-top:6px">敷地面積(総面積): <b id="areaTxt" style="color:#fff"></b>　※生徒のアプリでは、道路幅員4m未満のセットバック部分を除いた有効面積で建蔽率・容積率を計算します。</div>
+  </section>
+
+  <section class="card" id="secM3">
+    <h2><span class="n">3</span>法規・規模の条件</h2>
+    <div class="note" id="bothNote3" style="display:none;margin:0 0 4px">建蔽率・容積率・駐車台数は、上の「配置計画」の共通条件と同じ値が間取りの採点にも使われます。</div>
+    <div id="legalConds"></div>
+  </section>
+
+  <section class="card" id="secM4">
+    <h2><span class="n">4</span>階数と必要室</h2>
+    <div class="note" id="floorNote" style="margin:0 0 4px">① 先に階数を決めます。 ② その階数の範囲で、必要室と配置階を選びます。</div>
+    <div id="floorCond"></div>
+    <div id="floorTabs" class="chips" style="margin:6px 0"></div>
+    <div class="roomsWrap">
+      <table class="rooms">
+        <thead><tr><th>順序</th><th>室名</th><th>室数(以上)</th><th>最小マス数</th><th>配点</th><th></th></tr></thead>
+        <tbody id="roomRows"></tbody>
+      </table>
+    </div>
+    <div class="chips">
+      <button id="addRoom" class="sm">＋ 必要室を追加</button>
+      <button id="presetStd" class="sm">標準的な住宅セットを入れる</button>
+      <button id="clearRooms" class="sm del">全て消す</button>
+    </div>
+    <div class="note" style="margin-top:6px">最小マス数: 室の広さの下限を「マス数」で指定します(1マス=1モジュール角。参考:2マス=1畳)。「0」は広さの指定なし。階数が2階以上のときは、階のタブごとに必要室を設定します（その階に配置した室だけを数えます）。「階を問わない」は何階でもよい室です。</div>
+  </section>
+
+  <section class="card" id="secM5">
+    <h2><span class="n">5</span>計画条件(動線・採光など)</h2>
+    <div id="planConds"></div>
+  </section>
+
+  <section class="card" id="secH1" style="display:none">
+    <h2><span class="n">3</span>配置計画の条件(階数・建蔽率・容積率・駐車)</h2>
+    <div class="note" style="margin:0 0 4px">課題を読み込むと、生徒のアプリの敷地・階数・建蔽率・容積率・駐車条件がこの設定に切り替わります。チェックを入れた条件が採点されます。</div>
+    <div id="hConds1"></div>
+  </section>
+  <section class="card" id="secH2" style="display:none">
+    <h2><span class="n">4</span>診断スコア・ブロックプラン・動線の条件</h2>
+    <div id="hConds2"></div>
+  </section>
+</div>
+
+<aside>
+  <section class="card">
+    <h2>敷地プレビュー</h2>
+    <svg id="prev" viewBox="0 0 320 240" width="100%" style="background:#0b1326;border-radius:10px;border:1px solid var(--line)"></svg>
+  </section>
+  <section class="card">
+    <h2>生徒に表示される条件</h2>
+    <div id="summary"></div>
+    <div style="margin-top:10px">配点合計: <span class="big" id="ptTotal">0</span> <span class="note">点(採点は配点の重みで100点満点に換算)</span></div>
+  </section>
+  <section class="card">
+    <h2>配布のしかた</h2>
+    <ol id="howTo" class="note" style="margin:0;padding-left:18px">
+      <li><b>課題ファイル(.json)</b>を書き出し、Teams・Classroom・メールなどで配布。生徒は間取りアプリの「シナリオ」→「課題ファイルを読み込む」で開きます。</li>
+      <li>ファイルを扱いにくいiPad等では、<b>課題コード</b>(文字列)をコピーして配布。生徒は「課題コードを貼り付け」で読み込めます。</li>
+      <li>課題ファイルを読み込み直して、条件を直して再配布もできます。</li>
+    </ol>
+  </section>
+</aside>
+</main>
+
+<dialog id="dlgCode">
+  <h3 style="margin:0 0 8px">📋 課題コード</h3>
+  <p id="codeHow" class="note" style="margin:0 0 8px">QRコードか文字列を配布します。生徒は間取りアプリの「QRコードを読み取る」または「課題コードを貼り付け」で読み込みます。</p>
+  <div id="qrBox" style="text-align:center;margin-bottom:10px">
+    <canvas id="qrCanvas" style="width:min(100%,280px);height:auto;background:#fff;border-radius:8px"></canvas>
+    <div id="qrInfo" class="note" style="margin:4px 0 6px"></div>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button id="qrFullBtn" class="pri">🔍 QRコードを全画面で表示</button><button id="qrSaveBtn">🖼 QR画像を保存(PNG)</button>
+    </div>
+  </div>
+  <textarea id="codeOut" readonly></textarea>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+    <button id="codeCopy" class="pri">コピー</button><button id="codeClose">閉じる</button>
+  </div>
+</dialog>
+<div id="qrFull" style="display:none;position:fixed;inset:0;z-index:9999;background:#fff;align-items:center;justify-content:center;flex-direction:column;cursor:pointer">
+  <button id="qrFullClose" style="position:fixed;top:12px;right:12px;background:#e5e7eb;color:#111;border:1px solid #9ca3af;border-radius:10px;padding:10px 16px;font-size:16px;font-weight:700">✕ 閉じる</button>
+  <canvas id="qrBig"></canvas>
+  <div id="qrBigCap" style="color:#111;font-size:15px;font-weight:700;margin-top:6px;text-align:center"></div>
+</div>
+<dialog id="dlgOpen">
+  <h3 style="margin:0 0 8px">📂 課題を読み込んで編集</h3>
+  <p class="note" style="margin:0 0 8px">課題ファイル(.json)を選ぶか、課題コードを貼り付けてください。</p>
+  <input type="file" id="fileIn" accept=".json,application/json" style="margin-bottom:8px">
+  <textarea id="codeIn" placeholder="ここに課題コードを貼り付け"></textarea>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+    <button id="openApply" class="pri">コードを読み込む</button><button id="openClose">閉じる</button>
+  </div>
+</dialog>
+<div id="toast"></div>
+
+<script>(function(e,t){typeof exports==`object`&&typeof module<`u`?t(exports):typeof define==`function`&&define.amd?define([`exports`],t):(e=typeof globalThis<`u`?globalThis:e||self,t(e.pako={}))})(this,function(e){Object.defineProperty(e,Symbol.toStringTag,{value:`Module`});var t=4,n=0,r=1,i=2;function a(e){let t=e.length;for(;--t>=0;)e[t]=0}var o=0,s=1,c=2,l=29,u=256,d=286,f=30,p=19,m=573,h=15,g=16,_=7,v=256,y=16,b=17,x=18,S=new Uint8Array([0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0]),C=new Uint8Array([0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13]),w=new Uint8Array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,7]),T=new Uint8Array([16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15]),E=512,D=Array(288*2);a(D);var O=Array(f*2);a(O);var k=Array(E);a(k);var A=Array(256);a(A);var j=Array(l);a(j);var ee=Array(f);a(ee);var te=class{constructor(e,t,n,r,i){this.static_tree=e,this.extra_bits=t,this.extra_base=n,this.elems=r,this.max_length=i,this.has_stree=e&&e.length}},ne,re,ie,ae=class{constructor(e,t){this.dyn_tree=e,this.max_code=0,this.stat_desc=t}},oe=e=>e<256?k[e]:k[256+(e>>>7)],se=(e,t)=>{e.pending_buf[e.pending++]=t&255,e.pending_buf[e.pending++]=t>>>8&255},M=(e,t,n)=>{e.bi_valid>g-n?(e.bi_buf|=t<<e.bi_valid&65535,se(e,e.bi_buf),e.bi_buf=t>>g-e.bi_valid,e.bi_valid+=n-g):(e.bi_buf|=t<<e.bi_valid&65535,e.bi_valid+=n)},N=(e,t,n)=>{M(e,n[t*2],n[t*2+1])},ce=(e,t)=>{let n=0;do n|=e&1,e>>>=1,n<<=1;while(--t>0);return n>>>1},le=e=>{e.bi_valid===16?(se(e,e.bi_buf),e.bi_buf=0,e.bi_valid=0):e.bi_valid>=8&&(e.pending_buf[e.pending++]=e.bi_buf&255,e.bi_buf>>=8,e.bi_valid-=8)},ue=(e,t)=>{let n=t.dyn_tree,r=t.max_code,i=t.stat_desc.static_tree,a=t.stat_desc.has_stree,o=t.stat_desc.extra_bits,s=t.stat_desc.extra_base,c=t.stat_desc.max_length,l,u,d,f,p,g,_=0;for(f=0;f<=h;f++)e.bl_count[f]=0;for(n[e.heap[e.heap_max]*2+1]=0,l=e.heap_max+1;l<m;l++)u=e.heap[l],f=n[n[u*2+1]*2+1]+1,f>c&&(f=c,_++),n[u*2+1]=f,!(u>r)&&(e.bl_count[f]++,p=0,u>=s&&(p=o[u-s]),g=n[u*2],e.opt_len+=g*(f+p),a&&(e.static_len+=g*(i[u*2+1]+p)));if(_!==0){do{for(f=c-1;e.bl_count[f]===0;)f--;e.bl_count[f]--,e.bl_count[f+1]+=2,e.bl_count[c]--,_-=2}while(_>0);for(f=c;f!==0;f--)for(u=e.bl_count[f];u!==0;)d=e.heap[--l],!(d>r)&&(n[d*2+1]!==f&&(e.opt_len+=(f-n[d*2+1])*n[d*2],n[d*2+1]=f),u--)}},de=(e,t,n)=>{let r=Array(16),i=0,a,o;for(a=1;a<=h;a++)i=i+n[a-1]<<1,r[a]=i;for(o=0;o<=t;o++){let t=e[o*2+1];t!==0&&(e[o*2]=ce(r[t]++,t))}},fe=()=>{let e,t,n,r,i,a=Array(16);for(n=0,r=0;r<l-1;r++)for(j[r]=n,e=0;e<1<<S[r];e++)A[n++]=r;for(A[n-1]=r,i=0,r=0;r<16;r++)for(ee[r]=i,e=0;e<1<<C[r];e++)k[i++]=r;for(i>>=7;r<f;r++)for(ee[r]=i<<7,e=0;e<1<<C[r]-7;e++)k[256+i++]=r;for(t=0;t<=h;t++)a[t]=0;for(e=0;e<=143;)D[e*2+1]=8,e++,a[8]++;for(;e<=255;)D[e*2+1]=9,e++,a[9]++;for(;e<=279;)D[e*2+1]=7,e++,a[7]++;for(;e<=287;)D[e*2+1]=8,e++,a[8]++;for(de(D,287,a),e=0;e<f;e++)O[e*2+1]=5,O[e*2]=ce(e,5);ne=new te(D,S,257,d,h),re=new te(O,C,0,f,h),ie=new te([],w,0,p,_)},pe=e=>{let t;for(t=0;t<d;t++)e.dyn_ltree[t*2]=0;for(t=0;t<f;t++)e.dyn_dtree[t*2]=0;for(t=0;t<p;t++)e.bl_tree[t*2]=0;e.dyn_ltree[v*2]=1,e.opt_len=e.static_len=0,e.sym_next=e.matches=0},me=e=>{e.bi_valid>8?se(e,e.bi_buf):e.bi_valid>0&&(e.pending_buf[e.pending++]=e.bi_buf),e.bi_buf=0,e.bi_valid=0},he=(e,t,n,r)=>{let i=t*2,a=n*2;return e[i]<e[a]||e[i]===e[a]&&r[t]<=r[n]},ge=(e,t,n)=>{let r=e.heap[n],i=n<<1;for(;i<=e.heap_len&&(i<e.heap_len&&he(t,e.heap[i+1],e.heap[i],e.depth)&&i++,!he(t,r,e.heap[i],e.depth));)e.heap[n]=e.heap[i],n=i,i<<=1;e.heap[n]=r},_e=(e,t,n)=>{let r,i,a=0,o,s;if(e.sym_next!==0)do r=e.pending_buf[e.sym_buf+a++]&255,r+=(e.pending_buf[e.sym_buf+a++]&255)<<8,i=e.pending_buf[e.sym_buf+a++],r===0?N(e,i,t):(o=A[i],N(e,o+u+1,t),s=S[o],s!==0&&(i-=j[o],M(e,i,s)),r--,o=oe(r),N(e,o,n),s=C[o],s!==0&&(r-=ee[o],M(e,r,s)));while(a<e.sym_next);N(e,v,t)},ve=(e,t)=>{let n=t.dyn_tree,r=t.stat_desc.static_tree,i=t.stat_desc.has_stree,a=t.stat_desc.elems,o,s,c=-1,l;for(e.heap_len=0,e.heap_max=m,o=0;o<a;o++)n[o*2]===0?n[o*2+1]=0:(e.heap[++e.heap_len]=c=o,e.depth[o]=0);for(;e.heap_len<2;)l=e.heap[++e.heap_len]=c<2?++c:0,n[l*2]=1,e.depth[l]=0,e.opt_len--,i&&(e.static_len-=r[l*2+1]);for(t.max_code=c,o=e.heap_len>>1;o>=1;o--)ge(e,n,o);l=a;do o=e.heap[1],e.heap[1]=e.heap[e.heap_len--],ge(e,n,1),s=e.heap[1],e.heap[--e.heap_max]=o,e.heap[--e.heap_max]=s,n[l*2]=n[o*2]+n[s*2],e.depth[l]=(e.depth[o]>=e.depth[s]?e.depth[o]:e.depth[s])+1,n[o*2+1]=n[s*2+1]=l,e.heap[1]=l++,ge(e,n,1);while(e.heap_len>=2);e.heap[--e.heap_max]=e.heap[1],ue(e,t),de(n,c,e.bl_count)},ye=(e,t,n)=>{let r,i=-1,a,o=t[1],s=0,c=7,l=4;for(o===0&&(c=138,l=3),t[(n+1)*2+1]=65535,r=0;r<=n;r++)a=o,o=t[(r+1)*2+1],!(++s<c&&a===o)&&(s<l?e.bl_tree[a*2]+=s:a===0?s<=10?e.bl_tree[b*2]++:e.bl_tree[x*2]++:(a!==i&&e.bl_tree[a*2]++,e.bl_tree[y*2]++),s=0,i=a,o===0?(c=138,l=3):a===o?(c=6,l=3):(c=7,l=4))},be=(e,t,n)=>{let r,i=-1,a,o=t[1],s=0,c=7,l=4;for(o===0&&(c=138,l=3),r=0;r<=n;r++)if(a=o,o=t[(r+1)*2+1],!(++s<c&&a===o)){if(s<l)do N(e,a,e.bl_tree);while(--s!==0);else a===0?s<=10?(N(e,b,e.bl_tree),M(e,s-3,3)):(N(e,x,e.bl_tree),M(e,s-11,7)):(a!==i&&(N(e,a,e.bl_tree),s--),N(e,y,e.bl_tree),M(e,s-3,2));s=0,i=a,o===0?(c=138,l=3):a===o?(c=6,l=3):(c=7,l=4)}},xe=e=>{let t;for(ye(e,e.dyn_ltree,e.l_desc.max_code),ye(e,e.dyn_dtree,e.d_desc.max_code),ve(e,e.bl_desc),t=p-1;t>=3&&e.bl_tree[T[t]*2+1]===0;t--);return e.opt_len+=3*(t+1)+5+5+4,t},Se=(e,t,n,r)=>{let i;for(M(e,t-257,5),M(e,n-1,5),M(e,r-4,4),i=0;i<r;i++)M(e,e.bl_tree[T[i]*2+1],3);be(e,e.dyn_ltree,t-1),be(e,e.dyn_dtree,n-1)},Ce=e=>{let t=4093624447,i;for(i=0;i<=31;i++,t>>>=1)if(t&1&&e.dyn_ltree[i*2]!==0)return n;if(e.dyn_ltree[18]!==0||e.dyn_ltree[20]!==0||e.dyn_ltree[26]!==0)return r;for(i=32;i<u;i++)if(e.dyn_ltree[i*2]!==0)return r;return n},we=!1,Te=e=>{we||(fe(),we=!0),e.l_desc=new ae(e.dyn_ltree,ne),e.d_desc=new ae(e.dyn_dtree,re),e.bl_desc=new ae(e.bl_tree,ie),e.bi_buf=0,e.bi_valid=0,pe(e)},Ee=(e,t,n,r)=>{M(e,(o<<1)+ +!!r,3),me(e),se(e,n),se(e,~n),n&&e.pending_buf.set(e.window.subarray(t,t+n),e.pending),e.pending+=n},De=e=>{M(e,s<<1,3),N(e,v,D),le(e)},Oe=(e,n,r,a)=>{let o,l,u=0;e.level>0?(e.strm.data_type===i&&(e.strm.data_type=Ce(e)),ve(e,e.l_desc),ve(e,e.d_desc),u=xe(e),o=e.opt_len+3+7>>>3,l=e.static_len+3+7>>>3,(l<=o||e.strategy===t)&&(o=l)):o=l=r+5,r+4<=o&&n!==-1?Ee(e,n,r,a):e.strategy===t||l===o?(M(e,(s<<1)+ +!!a,3),_e(e,D,O)):(M(e,(c<<1)+ +!!a,3),Se(e,e.l_desc.max_code+1,e.d_desc.max_code+1,u+1),_e(e,e.dyn_ltree,e.dyn_dtree)),pe(e),a&&me(e)},P=(e,t,n)=>(e.pending_buf[e.sym_buf+e.sym_next++]=t,e.pending_buf[e.sym_buf+e.sym_next++]=t>>8,e.pending_buf[e.sym_buf+e.sym_next++]=n,t===0?e.dyn_ltree[n*2]++:(e.matches++,t--,e.dyn_ltree[(A[n]+u+1)*2]++,e.dyn_dtree[oe(t)*2]++),e.sym_next===e.sym_end),ke=(e,t,n,r)=>{let i=e&65535|0,a=e>>>16&65535|0,o=0;for(;n!==0;){o=n>2e3?2e3:n,n-=o;do i=i+t[r++]|0,a=a+i|0;while(--o);i%=65521,a%=65521}return i|a<<16|0},Ae=(()=>{let e=new Uint32Array(256*8),t;for(let n=0;n<256;n++){t=n;for(let e=0;e<8;e++)t=t&1?3988292384^t>>>1:t>>>1;e[n]=t}for(let n=0;n<256;n++){t=e[n];for(let r=256;r<256*8;r+=256)t=e[t&255]^t>>>8,e[r+n]=t}return e})(),F=(e,t,n,r)=>{let i=Ae,a=r+n,o=r;e^=-1;for(let n=a-7;o<n;o+=8)e^=t[o]|t[o+1]<<8|t[o+2]<<16|t[o+3]<<24,e=i[1792+(e&255)]^i[1536+(e>>>8&255)]^i[1280+(e>>>16&255)]^i[1024+(e>>>24)]^i[768+t[o+4]]^i[512+t[o+5]]^i[256+t[o+6]]^i[t[o+7]];for(;o<a;o++)e=e>>>8^i[(e^t[o])&255];return e^-1},I={2:`need dictionary`,1:`stream end`,0:``,"-1":`file error`,"-2":`stream error`,"-3":`data error`,"-4":`insufficient memory`,"-5":`buffer error`,"-6":`incompatible version`},je=0,Me=1,Ne=2,Pe=3,Fe=4,Ie=5,Le=6,Re=0,ze=1,Be=2,Ve=-1,He=-2,Ue=-3,We=-4,Ge=-5,Ke=1,qe=2,Je=3,Ye=4,Xe=0,Ze=9,Qe=15,$e=8,et=573,L=3,R=258,z=262,tt=32,nt=42,rt=57,it=69,at=73,ot=91,st=103,B=113,ct=666,V=1,lt=2,H=3,ut=4,dt=3,U=(e,t)=>(e.msg=I[t],t),ft=e=>e*2-(e>4?9:0),W=e=>{let t=e.length;for(;--t>=0;)e[t]=0},pt=e=>{let t,n,r,i=e.w_size;t=e.hash_size,r=t;do n=e.head[--r],e.head[r]=n>=i?n-i:0;while(--t);t=i,r=t;do n=e.prev[--r],e.prev[r]=n>=i?n-i:0;while(--t)},mt=(e,t,n)=>(t<<e.hash_shift^n)&e.hash_mask,G=(e,t)=>{let n;if(e.legacy_hash)n=e.ins_h=mt(e,e.ins_h,e.window[t+L-1]);else{let r=e.window,i=r[t]|r[t+1]<<8|r[t+2]<<16|r[t+3]<<24;n=e.ins_h=Math.imul(i,66521)+66521>>>16&e.hash_mask}let r=e.prev[t&e.w_mask]=e.head[n];return e.head[n]=t,r},K=e=>{let t=e.state,n=t.pending;n>e.avail_out&&(n=e.avail_out),n!==0&&(e.output.set(t.pending_buf.subarray(t.pending_out,t.pending_out+n),e.next_out),e.next_out+=n,t.pending_out+=n,e.total_out+=n,e.avail_out-=n,t.pending-=n,t.pending===0&&(t.pending_out=0))},q=(e,t)=>{Oe(e,e.block_start>=0?e.block_start:-1,e.strstart-e.block_start,t),e.block_start=e.strstart,K(e.strm)},J=(e,t)=>{e.pending_buf[e.pending++]=t},ht=(e,t)=>{e.pending_buf[e.pending++]=t>>>8&255,e.pending_buf[e.pending++]=t&255},gt=(e,t,n,r)=>{let i=e.avail_in;return i>r&&(i=r),i===0?0:(e.avail_in-=i,t.set(e.input.subarray(e.next_in,e.next_in+i),n),e.state.wrap===1?e.adler=ke(e.adler,t,i,n):e.state.wrap===2&&(e.adler=F(e.adler,t,i,n)),e.next_in+=i,e.total_in+=i,i)},_t=(e,t)=>{let n=e.max_chain_length,r=e.strstart,i,a,o=e.prev_length,s=e.nice_match,c=e.strstart>e.w_size-z?e.strstart-(e.w_size-z):0,l=e.window,u=e.w_mask,d=e.prev,f=e.strstart+R,p=l[r+o-1],m=l[r+o];e.prev_length>=e.good_match&&(n>>=2),s>e.lookahead&&(s=e.lookahead);do{if(i=t,l[i+o]!==m||l[i+o-1]!==p||l[i]!==l[r]||l[++i]!==l[r+1])continue;r+=2,i++;do;while(l[++r]===l[++i]&&l[++r]===l[++i]&&l[++r]===l[++i]&&l[++r]===l[++i]&&l[++r]===l[++i]&&l[++r]===l[++i]&&l[++r]===l[++i]&&l[++r]===l[++i]&&r<f);if(a=R-(f-r),r=f-R,a>o){if(e.match_start=t,o=a,a>=s)break;p=l[r+o-1],m=l[r+o]}}while((t=d[t&u])>c&&--n!==0);return o<=e.lookahead?o:e.lookahead},vt=e=>{let t=e.w_size,n,r,i;do{if(r=e.window_size-e.lookahead-e.strstart,e.strstart>=t+(t-z)&&(e.window.set(e.window.subarray(t,t+t-r),0),e.match_start-=t,e.strstart-=t,e.block_start-=t,e.insert>e.strstart&&(e.insert=e.strstart),pt(e),r+=t),e.strm.avail_in===0)break;if(n=gt(e.strm,e.window,e.strstart+e.lookahead,r),e.lookahead+=n,!e.legacy_hash){if(e.lookahead+e.insert>L)for(i=e.strstart-e.insert;e.insert&&(G(e,i),i++,e.insert--,!(e.lookahead+e.insert<=L)););}else if(e.lookahead+e.insert>=L)for(i=e.strstart-e.insert,e.ins_h=e.window[i],e.ins_h=mt(e,e.ins_h,e.window[i+1]);e.insert&&(G(e,i),i++,e.insert--,!(e.lookahead+e.insert<L)););}while(e.lookahead<z&&e.strm.avail_in!==0)},yt=(e,t)=>{let n=e.pending_buf_size-5>e.w_size?e.w_size:e.pending_buf_size-5,r,i,a,o=0,s=e.strm.avail_in;do{if(r=65535,a=e.bi_valid+42>>3,e.strm.avail_out<a||(a=e.strm.avail_out-a,i=e.strstart-e.block_start,r>i+e.strm.avail_in&&(r=i+e.strm.avail_in),r>a&&(r=a),r<n&&(r===0&&t!==4||t===0||r!==i+e.strm.avail_in)))break;o=+(t===4&&r===i+e.strm.avail_in),Ee(e,0,0,o),e.pending_buf[e.pending-4]=r,e.pending_buf[e.pending-3]=r>>8,e.pending_buf[e.pending-2]=~r,e.pending_buf[e.pending-1]=~r>>8,K(e.strm),i&&(i>r&&(i=r),e.strm.output.set(e.window.subarray(e.block_start,e.block_start+i),e.strm.next_out),e.strm.next_out+=i,e.strm.avail_out-=i,e.strm.total_out+=i,e.block_start+=i,r-=i),r&&(gt(e.strm,e.strm.output,e.strm.next_out,r),e.strm.next_out+=r,e.strm.avail_out-=r,e.strm.total_out+=r)}while(o===0);return s-=e.strm.avail_in,s&&(s>=e.w_size?(e.matches=2,e.window.set(e.strm.input.subarray(e.strm.next_in-e.w_size,e.strm.next_in),0),e.strstart=e.w_size,e.insert=e.strstart):(e.window_size-e.strstart<=s&&(e.strstart-=e.w_size,e.window.set(e.window.subarray(e.w_size,e.w_size+e.strstart),0),e.matches<2&&e.matches++,e.insert>e.strstart&&(e.insert=e.strstart)),e.window.set(e.strm.input.subarray(e.strm.next_in-s,e.strm.next_in),e.strstart),e.strstart+=s,e.insert+=s>e.w_size-e.insert?e.w_size-e.insert:s),e.block_start=e.strstart),e.high_water<e.strstart&&(e.high_water=e.strstart),o?ut:t!==0&&t!==4&&e.strm.avail_in===0&&e.strstart===e.block_start?lt:(a=e.window_size-e.strstart,e.strm.avail_in>a&&e.block_start>=e.w_size&&(e.block_start-=e.w_size,e.strstart-=e.w_size,e.window.set(e.window.subarray(e.w_size,e.w_size+e.strstart),0),e.matches<2&&e.matches++,a+=e.w_size,e.insert>e.strstart&&(e.insert=e.strstart)),a>e.strm.avail_in&&(a=e.strm.avail_in),a&&(gt(e.strm,e.window,e.strstart,a),e.strstart+=a,e.insert+=a>e.w_size-e.insert?e.w_size-e.insert:a),e.high_water<e.strstart&&(e.high_water=e.strstart),a=e.bi_valid+42>>3,a=e.pending_buf_size-a>65535?65535:e.pending_buf_size-a,n=a>e.w_size?e.w_size:a,i=e.strstart-e.block_start,(i>=n||(i||t===4)&&t!==0&&e.strm.avail_in===0&&i<=a)&&(r=i>a?a:i,o=+(t===4&&e.strm.avail_in===0&&r===i),Ee(e,e.block_start,r,o),e.block_start+=r,K(e.strm)),o?H:V)},bt=(e,t)=>{let n,r;for(;;){if(e.lookahead<z){if(vt(e),e.lookahead<z&&t===0)return V;if(e.lookahead===0)break}if(n=0,e.lookahead>=L&&(n=G(e,e.strstart)),n!==0&&e.strstart-n<=e.w_size-z&&(e.match_length=_t(e,n)),e.match_length>=L)if(r=P(e,e.strstart-e.match_start,e.match_length-L),e.lookahead-=e.match_length,e.match_length<=e.max_lazy_match&&e.lookahead>=L){e.match_length--;do e.strstart++,n=G(e,e.strstart);while(--e.match_length!==0);e.strstart++}else e.strstart+=e.match_length,e.match_length=0,e.legacy_hash&&(e.ins_h=e.window[e.strstart],e.ins_h=mt(e,e.ins_h,e.window[e.strstart+1]));else r=P(e,0,e.window[e.strstart]),e.lookahead--,e.strstart++;if(r&&(q(e,!1),e.strm.avail_out===0))return V}return e.insert=e.strstart<L-1?e.strstart:L-1,t===4?(q(e,!0),e.strm.avail_out===0?H:ut):e.sym_next&&(q(e,!1),e.strm.avail_out===0)?V:lt},xt=(e,t)=>{let n,r,i;for(;;){if(e.lookahead<z){if(vt(e),e.lookahead<z&&t===0)return V;if(e.lookahead===0)break}if(n=0,e.lookahead>=L&&(n=G(e,e.strstart)),e.prev_length=e.match_length,e.prev_match=e.match_start,e.match_length=L-1,n!==0&&e.prev_length<e.max_lazy_match&&e.strstart-n<=e.w_size-z&&(e.match_length=_t(e,n),e.match_length<=5&&(e.strategy===1||e.match_length===L&&e.strstart-e.match_start>4096)&&(e.match_length=L-1)),e.prev_length>=L&&e.match_length<=e.prev_length){i=e.strstart+e.lookahead-L,r=P(e,e.strstart-1-e.prev_match,e.prev_length-L),e.lookahead-=e.prev_length-1,e.prev_length-=2;do++e.strstart<=i&&(n=G(e,e.strstart));while(--e.prev_length!==0);if(e.match_available=0,e.match_length=L-1,e.strstart++,r&&(q(e,!1),e.strm.avail_out===0))return V}else if(e.match_available){if(r=P(e,0,e.window[e.strstart-1]),r&&q(e,!1),e.strstart++,e.lookahead--,e.strm.avail_out===0)return V}else e.match_available=1,e.strstart++,e.lookahead--}return e.match_available&&(r=P(e,0,e.window[e.strstart-1]),e.match_available=0),e.insert=e.strstart<L-1?e.strstart:L-1,t===4?(q(e,!0),e.strm.avail_out===0?H:ut):e.sym_next&&(q(e,!1),e.strm.avail_out===0)?V:lt},St=(e,t)=>{let n,r,i,a,o=e.window;for(;;){if(e.lookahead<=R){if(vt(e),e.lookahead<=R&&t===0)return V;if(e.lookahead===0)break}if(e.match_length=0,e.lookahead>=L&&e.strstart>0&&(i=e.strstart-1,r=o[i],r===o[++i]&&r===o[++i]&&r===o[++i])){a=e.strstart+R;do;while(r===o[++i]&&r===o[++i]&&r===o[++i]&&r===o[++i]&&r===o[++i]&&r===o[++i]&&r===o[++i]&&r===o[++i]&&i<a);e.match_length=R-(a-i),e.match_length>e.lookahead&&(e.match_length=e.lookahead)}if(e.match_length>=L?(n=P(e,1,e.match_length-L),e.lookahead-=e.match_length,e.strstart+=e.match_length,e.match_length=0):(n=P(e,0,e.window[e.strstart]),e.lookahead--,e.strstart++),n&&(q(e,!1),e.strm.avail_out===0))return V}return e.insert=0,t===4?(q(e,!0),e.strm.avail_out===0?H:ut):e.sym_next&&(q(e,!1),e.strm.avail_out===0)?V:lt},Ct=(e,t)=>{let n;for(;;){if(e.lookahead===0&&(vt(e),e.lookahead===0)){if(t===0)return V;break}if(e.match_length=0,n=P(e,0,e.window[e.strstart]),e.lookahead--,e.strstart++,n&&(q(e,!1),e.strm.avail_out===0))return V}return e.insert=0,t===4?(q(e,!0),e.strm.avail_out===0?H:ut):e.sym_next&&(q(e,!1),e.strm.avail_out===0)?V:lt},Y=class{constructor(e,t,n,r,i){this.good_length=e,this.max_lazy=t,this.nice_length=n,this.max_chain=r,this.func=i}},wt=[new Y(0,0,0,0,yt),new Y(4,4,8,4,bt),new Y(4,5,16,8,bt),new Y(4,6,32,32,bt),new Y(4,4,16,16,xt),new Y(8,16,32,32,xt),new Y(8,16,128,128,xt),new Y(8,32,128,256,xt),new Y(32,128,258,1024,xt),new Y(32,258,258,4096,xt)],Tt=e=>{e.window_size=2*e.w_size,W(e.head),e.max_lazy_match=wt[e.level].max_lazy,e.good_match=wt[e.level].good_length,e.nice_match=wt[e.level].nice_length,e.max_chain_length=wt[e.level].max_chain,e.strstart=0,e.block_start=0,e.lookahead=0,e.insert=0,e.match_length=e.prev_length=L-1,e.match_available=0,e.ins_h=0},Et=class{constructor(){this.strm=null,this.status=0,this.pending_buf=null,this.pending_buf_size=0,this.pending_out=0,this.pending=0,this.wrap=0,this.gzhead=null,this.gzindex=0,this.method=8,this.last_flush=-1,this.w_size=0,this.w_bits=0,this.w_mask=0,this.window=null,this.window_size=0,this.prev=null,this.head=null,this.ins_h=0,this.legacy_hash=0,this.hash_size=0,this.hash_bits=0,this.hash_mask=0,this.hash_shift=0,this.block_start=0,this.match_length=0,this.prev_match=0,this.match_available=0,this.strstart=0,this.match_start=0,this.lookahead=0,this.prev_length=0,this.max_chain_length=0,this.max_lazy_match=0,this.level=0,this.strategy=0,this.good_match=0,this.nice_match=0,this.dyn_ltree=new Uint16Array(et*2),this.dyn_dtree=new Uint16Array(122),this.bl_tree=new Uint16Array(78),W(this.dyn_ltree),W(this.dyn_dtree),W(this.bl_tree),this.l_desc=null,this.d_desc=null,this.bl_desc=null,this.bl_count=new Uint16Array(16),this.heap=new Uint16Array(573),W(this.heap),this.heap_len=0,this.heap_max=0,this.depth=new Uint16Array(573),W(this.depth),this.sym_buf=0,this.lit_bufsize=0,this.sym_next=0,this.sym_end=0,this.opt_len=0,this.static_len=0,this.matches=0,this.insert=0,this.bi_buf=0,this.bi_valid=0}},Dt=e=>{if(!e)return 1;let t=e.state;return+(!t||t.strm!==e||t.status!==nt&&t.status!==rt&&t.status!==it&&t.status!==at&&t.status!==ot&&t.status!==st&&t.status!==B&&t.status!==ct)},Ot=e=>{if(Dt(e))return U(e,-2);e.total_in=e.total_out=0,e.data_type=2;let t=e.state;return t.pending=0,t.pending_out=0,t.wrap<0&&(t.wrap=-t.wrap),t.status=t.wrap===2?rt:t.wrap?nt:B,e.adler=t.wrap===2?0:1,t.last_flush=-2,Te(t),0},kt=e=>{let t=Ot(e);return t===0&&Tt(e.state),t},At=(e,t)=>Dt(e)||e.state.wrap!==2?-2:(e.state.gzhead=t,0),jt=(e,t,n,r,i,a,o)=>{if(!e)return-2;let s=1;if(t===-1&&(t=6),r<0?(s=0,r=-r):r>15&&(s=2,r-=16),i<1||i>Ze||n!==8||r<8||r>15||t<0||t>9||a<0||a>4||r===8&&s!==1)return U(e,-2);r===8&&(r=9);let c=new Et;return e.state=c,c.strm=e,c.status=nt,c.wrap=s,c.gzhead=null,c.w_bits=r,c.w_size=1<<c.w_bits,c.w_mask=c.w_size-1,c.legacy_hash=+!!o,c.hash_bits=i+7,!c.legacy_hash&&c.hash_bits<15&&(c.hash_bits=15),c.hash_size=1<<c.hash_bits,c.hash_mask=c.hash_size-1,c.hash_shift=~~((c.hash_bits+L-1)/L),c.window=new Uint8Array(c.w_size*2),c.head=new Uint16Array(c.hash_size),c.prev=new Uint16Array(c.w_size),c.lit_bufsize=1<<i+6,c.pending_buf_size=c.lit_bufsize*4,c.pending_buf=new Uint8Array(c.pending_buf_size),c.sym_buf=c.lit_bufsize,c.sym_end=(c.lit_bufsize-1)*3,c.level=t,c.strategy=a,c.method=n,kt(e)},Mt=(e,t)=>jt(e,t,8,Qe,$e,0),Nt=(e,t)=>{if(Dt(e)||t>5||t<0)return e?U(e,-2):-2;let n=e.state;if(!e.output||e.avail_in!==0&&!e.input||n.status===ct&&t!==4)return U(e,e.avail_out===0?-5:-2);let r=n.last_flush;if(n.last_flush=t,n.pending!==0){if(K(e),e.avail_out===0)return n.last_flush=-1,0}else if(e.avail_in===0&&ft(t)<=ft(r)&&t!==4)return U(e,-5);if(n.status===ct&&e.avail_in!==0)return U(e,-5);if(n.status===nt&&n.wrap===0&&(n.status=B),n.status===nt){let t=8+(n.w_bits-8<<4)<<8,r=-1;if(r=n.strategy>=2||n.level<2?0:n.level<6?1:n.level===6?2:3,t|=r<<6,n.strstart!==0&&(t|=tt),t+=31-t%31,ht(n,t),n.strstart!==0&&(ht(n,e.adler>>>16),ht(n,e.adler&65535)),e.adler=1,n.status=B,K(e),n.pending!==0)return n.last_flush=-1,0}if(n.status===rt){if(e.adler=0,J(n,31),J(n,139),J(n,8),n.gzhead)J(n,+!!n.gzhead.text+(n.gzhead.hcrc?2:0)+(n.gzhead.extra?4:0)+(n.gzhead.name?8:0)+(n.gzhead.comment?16:0)),J(n,n.gzhead.time&255),J(n,n.gzhead.time>>8&255),J(n,n.gzhead.time>>16&255),J(n,n.gzhead.time>>24&255),J(n,n.level===9?2:n.strategy>=2||n.level<2?4:0),J(n,n.gzhead.os&255),n.gzhead.extra&&n.gzhead.extra.length&&(J(n,n.gzhead.extra.length&255),J(n,n.gzhead.extra.length>>8&255)),n.gzhead.hcrc&&(e.adler=F(e.adler,n.pending_buf,n.pending,0)),n.gzindex=0,n.status=it;else if(J(n,0),J(n,0),J(n,0),J(n,0),J(n,0),J(n,n.level===9?2:n.strategy>=2||n.level<2?4:0),J(n,dt),n.status=B,K(e),n.pending!==0)return n.last_flush=-1,0}if(n.status===it){if(n.gzhead.extra){let t=n.pending,r=(n.gzhead.extra.length&65535)-n.gzindex;for(;n.pending+r>n.pending_buf_size;){let i=n.pending_buf_size-n.pending;if(n.pending_buf.set(n.gzhead.extra.subarray(n.gzindex,n.gzindex+i),n.pending),n.pending=n.pending_buf_size,n.gzhead.hcrc&&n.pending>t&&(e.adler=F(e.adler,n.pending_buf,n.pending-t,t)),n.gzindex+=i,K(e),n.pending!==0)return n.last_flush=-1,0;t=0,r-=i}let i=new Uint8Array(n.gzhead.extra);n.pending_buf.set(i.subarray(n.gzindex,n.gzindex+r),n.pending),n.pending+=r,n.gzhead.hcrc&&n.pending>t&&(e.adler=F(e.adler,n.pending_buf,n.pending-t,t)),n.gzindex=0}n.status=at}if(n.status===at){if(n.gzhead.name){let t=n.pending,r;do{if(n.pending===n.pending_buf_size){if(n.gzhead.hcrc&&n.pending>t&&(e.adler=F(e.adler,n.pending_buf,n.pending-t,t)),K(e),n.pending!==0)return n.last_flush=-1,0;t=0}r=n.gzindex<n.gzhead.name.length?n.gzhead.name.charCodeAt(n.gzindex++)&255:0,J(n,r)}while(r!==0);n.gzhead.hcrc&&n.pending>t&&(e.adler=F(e.adler,n.pending_buf,n.pending-t,t)),n.gzindex=0}n.status=ot}if(n.status===ot){if(n.gzhead.comment){let t=n.pending,r;do{if(n.pending===n.pending_buf_size){if(n.gzhead.hcrc&&n.pending>t&&(e.adler=F(e.adler,n.pending_buf,n.pending-t,t)),K(e),n.pending!==0)return n.last_flush=-1,0;t=0}r=n.gzindex<n.gzhead.comment.length?n.gzhead.comment.charCodeAt(n.gzindex++)&255:0,J(n,r)}while(r!==0);n.gzhead.hcrc&&n.pending>t&&(e.adler=F(e.adler,n.pending_buf,n.pending-t,t))}n.status=st}if(n.status===st){if(n.gzhead.hcrc){if(n.pending+2>n.pending_buf_size&&(K(e),n.pending!==0))return n.last_flush=-1,0;J(n,e.adler&255),J(n,e.adler>>8&255),e.adler=0}if(n.status=B,K(e),n.pending!==0)return n.last_flush=-1,0}if(e.avail_in!==0||n.lookahead!==0||t!==0&&n.status!==ct){let r=n.level===0?yt(n,t):n.strategy===2?Ct(n,t):n.strategy===3?St(n,t):wt[n.level].func(n,t);if((r===H||r===ut)&&(n.status=ct),r===V||r===H)return e.avail_out===0&&(n.last_flush=-1),0;if(r===lt&&(t===1?De(n):t!==5&&(Ee(n,0,0,!1),t===3&&(W(n.head),n.lookahead===0&&(n.strstart=0,n.block_start=0,n.insert=0))),K(e),e.avail_out===0))return n.last_flush=-1,0}return t===4?n.wrap<=0?1:(n.wrap===2?(J(n,e.adler&255),J(n,e.adler>>8&255),J(n,e.adler>>16&255),J(n,e.adler>>24&255),J(n,e.total_in&255),J(n,e.total_in>>8&255),J(n,e.total_in>>16&255),J(n,e.total_in>>24&255)):(ht(n,e.adler>>>16),ht(n,e.adler&65535)),K(e),n.wrap>0&&(n.wrap=-n.wrap),+(n.pending===0)):0},Pt=e=>{if(Dt(e))return-2;let t=e.state.status;return e.state=null,t===B?U(e,-3):0},Ft=(e,t)=>{let n=t.length;if(Dt(e))return-2;let r=e.state,i=r.wrap;if(i===2||i===1&&r.status!==nt||r.lookahead)return-2;if(i===1&&(e.adler=ke(e.adler,t,n,0)),r.wrap=0,n>=r.w_size){i===0&&(W(r.head),r.strstart=0,r.block_start=0,r.insert=0);let e=new Uint8Array(r.w_size);e.set(t.subarray(n-r.w_size,n),0),t=e,n=r.w_size}let a=e.avail_in,o=e.next_in,s=e.input;for(e.avail_in=n,e.next_in=0,e.input=t,vt(r);r.lookahead>=L;){let e=r.strstart,t=r.lookahead-(L-1);do G(r,e),e++;while(--t);r.strstart=e,r.lookahead=L-1,vt(r)}return r.strstart+=r.lookahead,r.block_start=r.strstart,r.insert=r.lookahead,r.lookahead=0,r.match_length=r.prev_length=L-1,r.match_available=0,e.next_in=o,e.input=s,e.avail_in=a,r.wrap=i,0},It=16209,Lt=16191;function Rt(e,t){let n,r,i,a,o,s,c,l,u,d,f,p,m,h,g,_,v,y,b,x,S,C,w,T,E=e.state;n=e.next_in,w=e.input,r=n+(e.avail_in-5),i=e.next_out,T=e.output,a=i-(t-e.avail_out),o=i+(e.avail_out-257),s=E.dmax,c=E.wsize,l=E.whave,u=E.wnext,d=E.window,f=E.hold,p=E.bits,m=E.lencode,h=E.distcode,g=(1<<E.lenbits)-1,_=(1<<E.distbits)-1;top:do{p<15&&(f+=w[n++]<<p,p+=8,f+=w[n++]<<p,p+=8),v=m[f&g];dolen:for(;;){if(y=v>>>24,f>>>=y,p-=y,y=v>>>16&255,y===0)T[i++]=v&65535;else if(y&16){b=v&65535,y&=15,y&&(p<y&&(f+=w[n++]<<p,p+=8),b+=f&(1<<y)-1,f>>>=y,p-=y),p<15&&(f+=w[n++]<<p,p+=8,f+=w[n++]<<p,p+=8),v=h[f&_];dodist:for(;;){if(y=v>>>24,f>>>=y,p-=y,y=v>>>16&255,y&16){if(x=v&65535,y&=15,p<y&&(f+=w[n++]<<p,p+=8,p<y&&(f+=w[n++]<<p,p+=8)),x+=f&(1<<y)-1,x>s){e.msg=`invalid distance too far back`,E.mode=It;break top}if(f>>>=y,p-=y,y=i-a,x>y){if(y=x-y,y>l&&E.sane){e.msg=`invalid distance too far back`,E.mode=It;break top}if(S=0,C=d,u===0){if(S+=c-y,y<b){b-=y;do T[i++]=d[S++];while(--y);S=i-x,C=T}}else if(u<y){if(S+=c+u-y,y-=u,y<b){b-=y;do T[i++]=d[S++];while(--y);if(S=0,u<b){y=u,b-=y;do T[i++]=d[S++];while(--y);S=i-x,C=T}}}else if(S+=u-y,y<b){b-=y;do T[i++]=d[S++];while(--y);S=i-x,C=T}for(;b>2;)T[i++]=C[S++],T[i++]=C[S++],T[i++]=C[S++],b-=3;b&&(T[i++]=C[S++],b>1&&(T[i++]=C[S++]))}else{S=i-x;do T[i++]=T[S++],T[i++]=T[S++],T[i++]=T[S++],b-=3;while(b>2);b&&(T[i++]=T[S++],b>1&&(T[i++]=T[S++]))}}else if(y&64){e.msg=`invalid distance code`,E.mode=It;break top}else{v=h[(v&65535)+(f&(1<<y)-1)];continue dodist}break}}else if(!(y&64)){v=m[(v&65535)+(f&(1<<y)-1)];continue dolen}else if(y&32){E.mode=Lt;break top}else{e.msg=`invalid literal/length code`,E.mode=It;break top}break}}while(n<r&&i<o);b=p>>3,n-=b,p-=b<<3,f&=(1<<p)-1,e.next_in=n,e.next_out=i,e.avail_in=n<r?5+(r-n):5-(n-r),e.avail_out=i<o?257+(o-i):257-(i-o),E.hold=f,E.bits=p}var zt=15,Bt=852,Vt=592,Ht=0,Ut=1,Wt=2,Gt=new Uint16Array([3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,0,0]),Kt=new Uint8Array([16,16,16,16,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,20,20,20,20,21,21,21,21,16,199,75]),qt=new Uint16Array([1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577,0,0]),Jt=new Uint8Array([16,16,16,16,17,17,18,18,19,19,20,20,21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,29,29,64,64]),Yt=(e,t,n,r,i,a,o,s)=>{let c=s.bits,l=0,u=0,d=0,f=0,p=0,m=0,h=0,g=0,_=0,v=0,y,b,x,S,C,w=null,T,E=new Uint16Array(16),D=new Uint16Array(16),O=null,k,A,j;for(l=0;l<=zt;l++)E[l]=0;for(u=0;u<r;u++)E[t[n+u]]++;for(p=c,f=zt;f>=1&&E[f]===0;f--);if(p>f&&(p=f),f===0)return i[a++]=20971520,i[a++]=20971520,s.bits=1,0;for(d=1;d<f&&E[d]===0;d++);for(p<d&&(p=d),g=1,l=1;l<=zt;l++)if(g<<=1,g-=E[l],g<0)return-1;if(g>0&&(e===Ht||f!==1))return-1;for(D[1]=0,l=1;l<zt;l++)D[l+1]=D[l]+E[l];for(u=0;u<r;u++)t[n+u]!==0&&(o[D[t[n+u]]++]=u);if(e===Ht?(w=O=o,T=20):e===Ut?(w=Gt,O=Kt,T=257):(w=qt,O=Jt,T=0),v=0,u=0,l=d,C=a,m=p,h=0,x=-1,_=1<<p,S=_-1,e===Ut&&_>Bt||e===Wt&&_>Vt)return 1;for(;;){k=l-h,o[u]+1<T?(A=0,j=o[u]):o[u]>=T?(A=O[o[u]-T],j=w[o[u]-T]):(A=96,j=0),y=1<<l-h,b=1<<m,d=b;do b-=y,i[C+(v>>h)+b]=k<<24|A<<16|j|0;while(b!==0);for(y=1<<l-1;v&y;)y>>=1;if(y===0?v=0:(v&=y-1,v+=y),u++,--E[l]===0){if(l===f)break;l=t[n+o[u]]}if(l>p&&(v&S)!==x){for(h===0&&(h=p),C+=d,m=l-h,g=1<<m;m+h<f&&(g-=E[m+h],!(g<=0));)m++,g<<=1;if(_+=1<<m,e===Ut&&_>Bt||e===Wt&&_>Vt)return 1;x=v&S,i[x]=p<<24|m<<16|C-a|0}}return v!==0&&(i[C+v]=l-h<<24|4194304),s.bits=p,0},Xt=0,Zt=1,Qt=2,$t=16180,en=16181,tn=16182,nn=16183,rn=16184,an=16185,on=16186,sn=16187,cn=16188,ln=16189,un=16190,X=16191,dn=16192,fn=16193,pn=16194,mn=16195,hn=16196,gn=16197,_n=16198,vn=16199,yn=16200,bn=16201,xn=16202,Sn=16203,Cn=16204,wn=16205,Tn=16206,En=16207,Dn=16208,Z=16209,On=16210,kn=16211,An=852,jn=592,Mn=15,Nn=e=>(e>>>24&255)+(e>>>8&65280)+((e&65280)<<8)+((e&255)<<24),Pn=class{constructor(){this.strm=null,this.mode=0,this.last=!1,this.wrap=0,this.havedict=!1,this.flags=0,this.dmax=0,this.check=0,this.total=0,this.head=null,this.wbits=0,this.wsize=0,this.whave=0,this.wnext=0,this.window=null,this.hold=0,this.bits=0,this.length=0,this.offset=0,this.extra=0,this.lencode=null,this.distcode=null,this.lenbits=0,this.distbits=0,this.ncode=0,this.nlen=0,this.ndist=0,this.have=0,this.next=null,this.lens=new Uint16Array(320),this.work=new Uint16Array(288),this.lendyn=null,this.distdyn=null,this.sane=0,this.back=0,this.was=0}},Q=e=>{if(!e)return 1;let t=e.state;return+(!t||t.strm!==e||t.mode<$t||t.mode>kn)},Fn=e=>{if(Q(e))return-2;let t=e.state;return e.total_in=e.total_out=t.total=0,e.msg=``,t.wrap&&(e.adler=t.wrap&1),t.mode=$t,t.last=0,t.havedict=0,t.flags=-1,t.dmax=32768,t.head=null,t.hold=0,t.bits=0,t.lencode=t.lendyn=new Int32Array(An),t.distcode=t.distdyn=new Int32Array(jn),t.sane=1,t.back=-1,0},In=e=>{if(Q(e))return-2;let t=e.state;return t.wsize=0,t.whave=0,t.wnext=0,Fn(e)},Ln=(e,t)=>{let n;if(Q(e))return-2;let r=e.state;return t<0?(n=0,t=-t):(n=(t>>4)+5,t<48&&(t&=15)),t&&(t<8||t>15)?-2:(r.window!==null&&r.wbits!==t&&(r.window=null),r.wrap=n,r.wbits=t,In(e))},Rn=(e,t)=>{if(!e)return-2;let n=new Pn;e.state=n,n.strm=e,n.window=null,n.mode=$t;let r=Ln(e,t);return r!==0&&(e.state=null),r},zn=e=>Rn(e,Mn),Bn=!0,Vn,Hn,Un=e=>{if(Bn){Vn=new Int32Array(512),Hn=new Int32Array(32);let t=0;for(;t<144;)e.lens[t++]=8;for(;t<256;)e.lens[t++]=9;for(;t<280;)e.lens[t++]=7;for(;t<288;)e.lens[t++]=8;for(Yt(Zt,e.lens,0,288,Vn,0,e.work,{bits:9}),t=0;t<32;)e.lens[t++]=5;Yt(Qt,e.lens,0,32,Hn,0,e.work,{bits:5}),Bn=!1}e.lencode=Vn,e.lenbits=9,e.distcode=Hn,e.distbits=5},Wn=(e,t,n,r)=>{let i,a=e.state;return a.window===null&&(a.window=new Uint8Array(1<<a.wbits)),a.wsize===0&&(a.wsize=1<<a.wbits,a.wnext=0,a.whave=0),r>=a.wsize?(a.window.set(t.subarray(n-a.wsize,n),0),a.wnext=0,a.whave=a.wsize):(i=a.wsize-a.wnext,i>r&&(i=r),a.window.set(t.subarray(n-r,n-r+i),a.wnext),r-=i,r?(a.window.set(t.subarray(n-r,n),0),a.wnext=r,a.whave=a.wsize):(a.wnext+=i,a.wnext===a.wsize&&(a.wnext=0),a.whave<a.wsize&&(a.whave+=i))),0},Gn=(e,t)=>{let n,r,i,a,o,s,c,l,u,d,f,p,m,h,g=0,_,v,y,b,x,S,C,w,T=new Uint8Array(4),E,D,O=new Uint8Array([16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15]);if(Q(e)||!e.output||!e.input&&e.avail_in!==0)return-2;n=e.state,n.mode===X&&(n.mode=dn),o=e.next_out,i=e.output,c=e.avail_out,a=e.next_in,r=e.input,s=e.avail_in,l=n.hold,u=n.bits,d=s,f=c,w=0;inf_leave:for(;;)switch(n.mode){case $t:if(n.wrap===0){n.mode=dn;break}for(;u<16;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}if(n.wrap&2&&l===35615){n.wbits===0&&(n.wbits=15),n.check=0,T[0]=l&255,T[1]=l>>>8&255,n.check=F(n.check,T,2,0),l=0,u=0,n.mode=en;break}if(n.head&&(n.head.done=!1),!(n.wrap&1)||(((l&255)<<8)+(l>>8))%31){e.msg=`incorrect header check`,n.mode=Z;break}if((l&15)!=8){e.msg=`unknown compression method`,n.mode=Z;break}if(l>>>=4,u-=4,C=(l&15)+8,n.wbits===0&&(n.wbits=C),C>15||C>n.wbits){e.msg=`invalid window size`,n.mode=Z;break}n.dmax=1<<n.wbits,n.flags=0,e.adler=n.check=1,n.mode=l&512?ln:X,l=0,u=0;break;case en:for(;u<16;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}if(n.flags=l,(n.flags&255)!=8){e.msg=`unknown compression method`,n.mode=Z;break}if(n.flags&57344){e.msg=`unknown header flags set`,n.mode=Z;break}n.head&&(n.head.text=l>>8&1),n.flags&512&&n.wrap&4&&(T[0]=l&255,T[1]=l>>>8&255,n.check=F(n.check,T,2,0)),l=0,u=0,n.mode=tn;case tn:for(;u<32;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}n.head&&(n.head.time=l>>>0),n.flags&512&&n.wrap&4&&(T[0]=l&255,T[1]=l>>>8&255,T[2]=l>>>16&255,T[3]=l>>>24&255,n.check=F(n.check,T,4,0)),l=0,u=0,n.mode=nn;case nn:for(;u<16;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}n.head&&(n.head.xflags=l&255,n.head.os=l>>8),n.flags&512&&n.wrap&4&&(T[0]=l&255,T[1]=l>>>8&255,n.check=F(n.check,T,2,0)),l=0,u=0,n.mode=rn;case rn:if(n.flags&1024){for(;u<16;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}n.length=l,n.head&&(n.head.extra_len=l),n.flags&512&&n.wrap&4&&(T[0]=l&255,T[1]=l>>>8&255,n.check=F(n.check,T,2,0)),l=0,u=0}else n.head&&(n.head.extra=null);n.mode=an;case an:if(n.flags&1024&&(p=n.length,p>s&&(p=s),p&&(n.head&&(C=n.head.extra_len-n.length,n.head.extra||(n.head.extra=new Uint8Array(n.head.extra_len)),n.head.extra.set(r.subarray(a,a+p),C)),n.flags&512&&n.wrap&4&&(n.check=F(n.check,r,p,a)),s-=p,a+=p,n.length-=p),n.length))break inf_leave;n.length=0,n.mode=on;case on:if(n.flags&2048){if(s===0)break inf_leave;p=0;do C=r[a+p++],n.head&&C&&n.length<65536&&(n.head.name+=String.fromCharCode(C),n.length++);while(C&&p<s);if(n.flags&512&&n.wrap&4&&(n.check=F(n.check,r,p,a)),s-=p,a+=p,C)break inf_leave}else n.head&&(n.head.name=null);n.length=0,n.mode=sn;case sn:if(n.flags&4096){if(s===0)break inf_leave;p=0;do C=r[a+p++],n.head&&C&&n.length<65536&&(n.head.comment+=String.fromCharCode(C),n.length++);while(C&&p<s);if(n.flags&512&&n.wrap&4&&(n.check=F(n.check,r,p,a)),s-=p,a+=p,C)break inf_leave}else n.head&&(n.head.comment=null);n.mode=cn;case cn:if(n.flags&512){for(;u<16;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}if(n.wrap&4&&l!==(n.check&65535)){e.msg=`header crc mismatch`,n.mode=Z;break}l=0,u=0}n.head&&(n.head.hcrc=n.flags>>9&1,n.head.done=!0),e.adler=n.check=0,n.mode=X;break;case ln:for(;u<32;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}e.adler=n.check=Nn(l),l=0,u=0,n.mode=un;case un:if(n.havedict===0)return e.next_out=o,e.avail_out=c,e.next_in=a,e.avail_in=s,n.hold=l,n.bits=u,2;e.adler=n.check=1,n.mode=X;case X:if(t===5||t===6)break inf_leave;case dn:if(n.last){l>>>=u&7,u-=u&7,n.mode=Tn;break}for(;u<3;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}switch(n.last=l&1,l>>>=1,--u,l&3){case 0:n.mode=fn;break;case 1:if(Un(n),n.mode=vn,t===6){l>>>=2,u-=2;break inf_leave}break;case 2:n.mode=hn;break;case 3:e.msg=`invalid block type`,n.mode=Z}l>>>=2,u-=2;break;case fn:for(l>>>=u&7,u-=u&7;u<32;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}if((l&65535)!=(l>>>16^65535)){e.msg=`invalid stored block lengths`,n.mode=Z;break}if(n.length=l&65535,l=0,u=0,n.mode=pn,t===6)break inf_leave;case pn:n.mode=mn;case mn:if(p=n.length,p){if(p>s&&(p=s),p>c&&(p=c),p===0)break inf_leave;i.set(r.subarray(a,a+p),o),s-=p,a+=p,c-=p,o+=p,n.length-=p;break}n.mode=X;break;case hn:for(;u<14;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}if(n.nlen=(l&31)+257,l>>>=5,u-=5,n.ndist=(l&31)+1,l>>>=5,u-=5,n.ncode=(l&15)+4,l>>>=4,u-=4,n.nlen>286||n.ndist>30){e.msg=`too many length or distance symbols`,n.mode=Z;break}n.have=0,n.mode=gn;case gn:for(;n.have<n.ncode;){for(;u<3;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}n.lens[O[n.have++]]=l&7,l>>>=3,u-=3}for(;n.have<19;)n.lens[O[n.have++]]=0;if(n.lencode=n.lendyn,n.lenbits=7,E={bits:n.lenbits},w=Yt(Xt,n.lens,0,19,n.lencode,0,n.work,E),n.lenbits=E.bits,w){e.msg=`invalid code lengths set`,n.mode=Z;break}n.have=0,n.mode=_n;case _n:for(;n.have<n.nlen+n.ndist;){for(;g=n.lencode[l&(1<<n.lenbits)-1],_=g>>>24,v=g>>>16&255,y=g&65535,!(_<=u);){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}if(y<16)l>>>=_,u-=_,n.lens[n.have++]=y;else{if(y===16){for(D=_+2;u<D;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}if(l>>>=_,u-=_,n.have===0){e.msg=`invalid bit length repeat`,n.mode=Z;break}C=n.lens[n.have-1],p=3+(l&3),l>>>=2,u-=2}else if(y===17){for(D=_+3;u<D;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}l>>>=_,u-=_,C=0,p=3+(l&7),l>>>=3,u-=3}else{for(D=_+7;u<D;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}l>>>=_,u-=_,C=0,p=11+(l&127),l>>>=7,u-=7}if(n.have+p>n.nlen+n.ndist){e.msg=`invalid bit length repeat`,n.mode=Z;break}for(;p--;)n.lens[n.have++]=C}}if(n.mode===Z)break;if(n.lens[256]===0){e.msg=`invalid code -- missing end-of-block`,n.mode=Z;break}if(n.lenbits=9,E={bits:n.lenbits},w=Yt(Zt,n.lens,0,n.nlen,n.lencode,0,n.work,E),n.lenbits=E.bits,w){e.msg=`invalid literal/lengths set`,n.mode=Z;break}if(n.distbits=6,n.distcode=n.distdyn,E={bits:n.distbits},w=Yt(Qt,n.lens,n.nlen,n.ndist,n.distcode,0,n.work,E),n.distbits=E.bits,w){e.msg=`invalid distances set`,n.mode=Z;break}if(n.mode=vn,t===6)break inf_leave;case vn:n.mode=yn;case yn:if(s>=6&&c>=258){e.next_out=o,e.avail_out=c,e.next_in=a,e.avail_in=s,n.hold=l,n.bits=u,Rt(e,f),o=e.next_out,i=e.output,c=e.avail_out,a=e.next_in,r=e.input,s=e.avail_in,l=n.hold,u=n.bits,n.mode===X&&(n.back=-1);break}for(n.back=0;g=n.lencode[l&(1<<n.lenbits)-1],_=g>>>24,v=g>>>16&255,y=g&65535,!(_<=u);){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}if(v&&!(v&240)){for(b=_,x=v,S=y;g=n.lencode[S+((l&(1<<b+x)-1)>>b)],_=g>>>24,v=g>>>16&255,y=g&65535,!(b+_<=u);){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}l>>>=b,u-=b,n.back+=b}if(l>>>=_,u-=_,n.back+=_,n.length=y,v===0){n.mode=wn;break}if(v&32){n.back=-1,n.mode=X;break}if(v&64){e.msg=`invalid literal/length code`,n.mode=Z;break}n.extra=v&15,n.mode=bn;case bn:if(n.extra){for(D=n.extra;u<D;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}n.length+=l&(1<<n.extra)-1,l>>>=n.extra,u-=n.extra,n.back+=n.extra}n.was=n.length,n.mode=xn;case xn:for(;g=n.distcode[l&(1<<n.distbits)-1],_=g>>>24,v=g>>>16&255,y=g&65535,!(_<=u);){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}if(!(v&240)){for(b=_,x=v,S=y;g=n.distcode[S+((l&(1<<b+x)-1)>>b)],_=g>>>24,v=g>>>16&255,y=g&65535,!(b+_<=u);){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}l>>>=b,u-=b,n.back+=b}if(l>>>=_,u-=_,n.back+=_,v&64){e.msg=`invalid distance code`,n.mode=Z;break}n.offset=y,n.extra=v&15,n.mode=Sn;case Sn:if(n.extra){for(D=n.extra;u<D;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}n.offset+=l&(1<<n.extra)-1,l>>>=n.extra,u-=n.extra,n.back+=n.extra}if(n.offset>n.dmax){e.msg=`invalid distance too far back`,n.mode=Z;break}n.mode=Cn;case Cn:if(c===0)break inf_leave;if(p=f-c,n.offset>p){if(p=n.offset-p,p>n.whave&&n.sane){e.msg=`invalid distance too far back`,n.mode=Z;break}p>n.wnext?(p-=n.wnext,m=n.wsize-p):m=n.wnext-p,p>n.length&&(p=n.length),h=n.window}else h=i,m=o-n.offset,p=n.length;p>c&&(p=c),c-=p,n.length-=p;do i[o++]=h[m++];while(--p);n.length===0&&(n.mode=yn);break;case wn:if(c===0)break inf_leave;i[o++]=n.length,c--,n.mode=yn;break;case Tn:if(n.wrap){for(;u<32;){if(s===0)break inf_leave;s--,l|=r[a++]<<u,u+=8}if(f-=c,e.total_out+=f,n.total+=f,n.wrap&4&&f&&(e.adler=n.check=n.flags?F(n.check,i,f,o-f):ke(n.check,i,f,o-f)),f=c,n.wrap&4&&(n.flags?l:Nn(l))!==n.check){e.msg=`incorrect data check`,n.mode=Z;break}l=0,u=0}n.mode=En;case En:if(n.wrap&&n.flags){for(;u<32;){if(s===0)break inf_leave;s--,l+=r[a++]<<u,u+=8}if(n.wrap&4&&l!==(n.total&4294967295)){e.msg=`incorrect length check`,n.mode=Z;break}l=0,u=0}n.mode=Dn;case Dn:w=1;break inf_leave;case Z:w=-3;break inf_leave;case On:return-4;case kn:default:return-2}return e.next_out=o,e.avail_out=c,e.next_in=a,e.avail_in=s,n.hold=l,n.bits=u,(n.wsize||f!==e.avail_out&&n.mode<Z&&(n.mode<Tn||t!==4))&&Wn(e,e.output,e.next_out,f-e.avail_out)?(n.mode=On,-4):(d-=e.avail_in,f-=e.avail_out,e.total_in+=d,e.total_out+=f,n.total+=f,n.wrap&4&&f&&(e.adler=n.check=n.flags?F(n.check,i,f,e.next_out-f):ke(n.check,i,f,e.next_out-f)),e.data_type=n.bits+(n.last?64:0)+(n.mode===X?128:0)+(n.mode===vn||n.mode===pn?256:0),(d===0&&f===0||t===4)&&w===0&&(w=-5),w)},Kn=e=>{if(Q(e))return-2;let t=e.state;return t.window&&(t.window=null),e.state=null,0},qn=(e,t)=>{if(Q(e))return-2;let n=e.state;return n.wrap&2?(n.head=t,t.done=!1,0):-2},Jn=(e,t)=>{let n=t.length,r,i,a;return Q(e)||(r=e.state,r.wrap!==0&&r.mode!==un)?-2:r.mode===un&&(i=1,i=ke(i,t,n,0),i!==r.check)?-3:(a=Wn(e,t,n,n),a?(r.mode=On,-4):(r.havedict=1,0))},Yn=class{constructor(){this.input=null,this.next_in=0,this.avail_in=0,this.total_in=0,this.output=null,this.next_out=0,this.avail_out=0,this.total_out=0,this.msg=``,this.state=null,this.data_type=2,this.adler=0}},Xn=class{constructor(){this.text=0,this.time=0,this.xflags=0,this.os=0,this.extra=null,this.extra_len=0,this.name=``,this.comment=``,this.hcrc=0,this.done=!1}},Zn=e=>{let t=new Uint8Array(e.reduce((e,t)=>e+t.length,0)),n=0;for(let r of e)t.set(r,n),n+=r.length;return t};function Qn(e){"@babel/helpers - typeof";return Qn=typeof Symbol==`function`&&typeof Symbol.iterator==`symbol`?function(e){return typeof e}:function(e){return e&&typeof Symbol==`function`&&e.constructor===Symbol&&e!==Symbol.prototype?`symbol`:typeof e},Qn(e)}function $n(e,t){if(Qn(e)!=`object`||!e)return e;var n=e[Symbol.toPrimitive];if(n!==void 0){var r=n.call(e,t||`default`);if(Qn(r)!=`object`)return r;throw TypeError(`@@toPrimitive must return a primitive value.`)}return(t===`string`?String:Number)(e)}function er(e){var t=$n(e,`string`);return Qn(t)==`symbol`?t:t+``}function $(e,t,n){return(t=er(t))in e?Object.defineProperty(e,t,{value:n,enumerable:!0,configurable:!0,writable:!0}):e[t]=n,e}var tr=Object.prototype.toString,nr={level:-1,chunkSize:16384,windowBits:15,memLevel:8,strategy:0,raw:!1,gzip:!1,legacyHash:!1,dictionary:new Uint8Array},rr=class{constructor(e={}){$(this,`options`,void 0),$(this,`err`,void 0),$(this,`msg`,void 0),$(this,`ended`,void 0),$(this,`started`,void 0),$(this,`chunks`,void 0),$(this,`strm`,void 0),$(this,`result`,void 0),this.options=Object.assign({},nr,e);let t=this.options;t.raw&&t.windowBits>0?t.windowBits=-t.windowBits:t.gzip&&t.windowBits>0&&t.windowBits<16&&(t.windowBits+=16),this.err=0,this.msg=``,this.ended=!1,this.started=!1,this.chunks=[],this.result=new Uint8Array,this.strm=new Yn,this.strm.avail_out=0;let n=jt(this.strm,t.level,8,t.windowBits,t.memLevel,t.strategy,t.legacyHash);if(n!==0)throw Error(I[n]);tr.call(t.dictionary)===`[object ArrayBuffer]`&&(t.dictionary=new Uint8Array(t.dictionary));let r=t.dictionary;if(r.length){if(t.gzip)throw Error(`dictionary is not supported with gzip`);if(n=Ft(this.strm,r),n!==0)throw Error(I[n])}}push(e,t=!1){let n=this.strm,r=this.options.chunkSize,i,a;if(this.ended)return!1;for(a=typeof t==`number`?t:t===!0?4:0,typeof e==`string`?n.input=new TextEncoder().encode(e):tr.call(e)===`[object ArrayBuffer]`?n.input=new Uint8Array(e):n.input=e,n.next_in=0,n.avail_in=n.input.length,this.started||(this.started=!0,this.onStart(n));;){if(n.avail_out===0&&(n.output=new Uint8Array(r),n.next_out=0,n.avail_out=r),(a===2||a===3)&&n.avail_out<=6){this.onData(n.output.subarray(0,n.next_out)),n.avail_out=0;continue}if(i=Nt(n,a),i===-2)break;if(i===1){n.next_out>0&&this.onData(n.output.subarray(0,n.next_out)),i=Pt(this.strm);break}if(n.avail_out===0){this.onData(n.output);continue}if(a>0&&n.next_out>0){this.onData(n.output.subarray(0,n.next_out)),n.avail_out=0;continue}if(n.avail_in===0)return!0}return this.err=i,this.msg=n.msg||I[i],this.ended=!0,this.onEnd(i),i===0}onStart(e){}onData(e){this.chunks.push(e)}onEnd(e){e===0&&(this.result=Zn(this.chunks)),this.chunks=[]}};function ir(e,t={}){let n=new rr(t);if(n.push(e,!0),n.err)throw Error(n.msg);return n.result}function ar(e,t={}){return ir(e,Object.assign({},t,{raw:!0}))}function or(e,t={}){return ir(e,Object.assign({},t,{gzip:!0}))}function sr(e,t){var n=Object.keys(e);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(e);t&&(r=r.filter(function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable})),n.push.apply(n,r)}return n}function cr(e){for(var t=1;t<arguments.length;t++){var n=arguments[t]==null?{}:arguments[t];t%2?sr(Object(n),!0).forEach(function(t){$(e,t,n[t])}):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(n)):sr(Object(n)).forEach(function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(n,t))})}return e}var lr=Object.prototype.toString,ur={chunkSize:1024*64,windowBits:15,raw:!1,dictionary:new Uint8Array},dr=class{constructor(e={}){$(this,`options`,void 0),$(this,`err`,void 0),$(this,`msg`,void 0),$(this,`ended`,void 0),$(this,`started`,void 0),$(this,`chunks`,void 0),$(this,`strm`,void 0),$(this,`result`,void 0),this.options=Object.assign({},ur,e);let t=this.options;t.raw&&t.windowBits>=0&&t.windowBits<16&&(t.windowBits=-t.windowBits,t.windowBits===0&&(t.windowBits=-15)),t.windowBits>=0&&t.windowBits<16&&!e.windowBits&&(t.windowBits+=32),t.windowBits>15&&t.windowBits<48&&(t.windowBits&15||(t.windowBits|=15)),this.err=0,this.msg=``,this.ended=!1,this.started=!1,this.chunks=[],this.result=new Uint8Array,this.strm=new Yn,this.strm.avail_out=0;let n=Rn(this.strm,t.windowBits);if(n!==0)throw Error(I[n]);lr.call(t.dictionary)===`[object ArrayBuffer]`&&(t.dictionary=new Uint8Array(t.dictionary));let r=t.dictionary;if(t.raw&&r.length&&(n=Jn(this.strm,r),n!==0))throw Error(I[n])}push(e,t=!1){let n=this.strm,r=this.options.chunkSize,i,a,o;if(this.ended)return this.err===0;for(a=typeof t==`number`?t:t===!0?4:0,lr.call(e)===`[object ArrayBuffer]`?n.input=new Uint8Array(e):n.input=e,n.next_in=0,n.avail_in=n.input.length,this.started||(this.started=!0,this.onStart(n));;){if(n.avail_out===0&&(n.output=new Uint8Array(r),n.next_out=0,n.avail_out=r),i=Gn(n,a),i===2){let e=this.options.dictionary;e.length&&(i=Jn(n,e),i===0?i=Gn(n,a):i===-3&&(i=2))}for(;n.avail_in>0&&i===1&&n.state.wrap&2&&n.state.flags!==0&&n.input[n.next_in]!==0;)In(n),i=Gn(n,a);if(i===-2||i===-3||i===2||i===-4)break;if(o=n.avail_out,n.next_out&&(n.avail_out===0||i===1||a>0)&&(this.onData(n.output.length===n.next_out?n.output:n.output.subarray(0,n.next_out)),n.avail_out=0,n.next_out=0),!((i===0||i===-5)&&o===0)){if(i===1){i=Kn(this.strm);break}if(n.avail_in===0){if(a===4){i=Kn(this.strm),i===0&&(i=-5);break}return!0}}}return this.err=i,this.msg=n.msg||I[i],this.ended=!0,this.onEnd(i),i===0}onStart(e){}onData(e){this.chunks.push(e)}onEnd(e){e===0&&(this.result=Zn(this.chunks)),this.chunks=[]}};function fr(e,t={}){let n=new dr(t);if(n.push(e,!0),n.err)throw Error(n.msg);let r=n.result;return t.toText?new TextDecoder().decode(r):r}function pr(e,t={}){return fr(e,cr(cr({},t),{},{raw:!0}))}e.Deflate=rr,e.GZheader=Xn,e.Inflate=dr,e.ZStream=Yn,e.Z_BLOCK=Ie,e.Z_BUF_ERROR=Ge,e.Z_DATA_ERROR=Ue,e.Z_DEFAULT_STRATEGY=Xe,e.Z_ERRNO=Ve,e.Z_FILTERED=Ke,e.Z_FINISH=Fe,e.Z_FIXED=Ye,e.Z_FULL_FLUSH=Pe,e.Z_HUFFMAN_ONLY=qe,e.Z_MEM_ERROR=We,e.Z_NEED_DICT=Be,e.Z_NO_FLUSH=je,e.Z_OK=Re,e.Z_PARTIAL_FLUSH=Me,e.Z_RLE=Je,e.Z_STREAM_END=ze,e.Z_STREAM_ERROR=He,e.Z_SYNC_FLUSH=Ne,e.Z_TREES=Le,e.deflate=ir,e.deflateRaw=ar,e.gzip=or,e.inflate=fr,e.ungzip=fr,e.inflateRaw=pr,e.zlibDeflate=Nt,e.zlibDeflateEnd=Pt,e.zlibDeflateInit=Mt,e.zlibDeflateInit2=jt,e.zlibDeflateReset=kt,e.zlibDeflateResetKeep=Ot,e.zlibDeflateSetDictionary=Ft,e.zlibDeflateSetHeader=At,e.zlibInflate=Gn,e.zlibInflateEnd=Kn,e.zlibInflateGetHeader=qn,e.zlibInflateInit=zn,e.zlibInflateInit2=Rn,e.zlibInflateReset=In,e.zlibInflateReset2=Ln,e.zlibInflateResetKeep=Fn,e.zlibInflateSetDictionary=Jn});
+</script>
+<script>var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1})},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(o*r,n*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}(function(){return qrcode});</script>
+<script>
+const PATTERNS = {
+  south: ['南道路', ['S']], north: ['北道路', ['N']], east: ['東道路', ['E']], west: ['西道路', ['W']],
+  se_corner: ['南東角地', ['S', 'E']], sw_corner: ['南西角地', ['S', 'W']], ne_corner: ['北東角地', ['N', 'E']], nw_corner: ['北西角地', ['N', 'W']],
+  ns_through: ['南北二方道路', ['S', 'N']], ew_through: ['東西二方道路', ['E', 'W']],
+  flag: ['旗竿地(南道路)', ['S']], narrow_s: ['縦長敷地(南道路)', ['S']], narrow_n: ['縦長敷地(北道路)', ['N']],
+  wide_e: ['横長敷地(東道路)', ['E']], wide_w: ['横長敷地(西道路)', ['W']]
+};
+const DIR_NAME = { S: '南', N: '北', E: '東', W: '西' };
+const ROAD_OPTS = [2.7, 3, 4, 5, 6, 8, 10, 12];
+const ROOMS = [
+  ['LDK', 'LDK'], ['LIVING', 'リビング'], ['DINING', 'ダイニング'], ['KITCHEN', 'キッチン'], ['BEDROOM_MAIN', '主寝室'], ['BEDROOM_CHILD', '子供室'],
+  ['BEDROOM_JAPANESE', '和室'], ['STUDY', '書斎'], ['BATHROOM', '浴室'], ['WASHROOM', '洗面脱衣室'], ['TOILET', 'トイレ'], ['ENTRANCE', '玄関'],
+  ['CORRIDOR', 'ホール・廊下'], ['STAIRS', '階段'], ['BALCONY', 'バルコニー'],
+  ['CLOSET_BED', '収納:寝室用'], ['CLOSET_KITCHEN', '収納:キッチン用(パントリー)'], ['NANDO', '収納:納戸'], ['CLOSET', '収納:その他'],
+  ['VOID', '吹き抜け(2階以上)']
+];
+const ROOM_NAME = Object.fromEntries(ROOMS);
+const $ = id => document.getElementById(id);
+
+// 状態
+const S = {
+  title: '', desc: '', author: '', module: 'shaku', unitM: 0.91,
+  pattern: 'south', width: 12, height: 12, roadWidths: { S: 6, N: 6, E: 6, W: 6 }, flag: { w: 8, h: 8, poleW: 4, poleX: 0, poleH: 5 },
+  c: {
+    fitSite: { on: true, points: 10 },
+    kenpei: { on: true, max: 60, points: 10 },
+    yoseki: { on: true, max: 200, points: 10 },
+    totalArea: { on: false, minVal: 80, minUnit: 'pct', maxSqm: 120, points: 10 },
+    floors: { on: true, count: 2, points: 10 },
+    parking: { on: true, cars: 1, points: 10 },
+    lifeFlow: { on: true, minScore: 60, points: 10 },
+    choreFlow: { on: true, minScore: 60, points: 10 },
+    stairsAligned: { on: true, points: 5 },
+    daylight: { on: true, minScore: 70, points: 10 },
+    ldkSouth: { on: false, points: 5 },
+    sanitaryClustered: { on: false, points: 5 },
+    kitchenWash: { on: false, points: 5 }
+  },
+  rooms: [],
+  kind: 'madori',
+  h: {
+    floors: { on: true, count: 2, points: 10 },
+    bcr: { on: true, target: 50, points: 15 },
+    far: { on: true, value: 100, points: 15 },
+    parking: { on: true, perpendicular: 1, parallel: 0, tandem: 0, points: 15 },
+    planScore: { on: true, min: 75, points: 15 },
+    blockScore: { on: true, min: 70, points: 15 },
+    lifeRoute: { on: true, points: 7 },
+    choreRoute: { on: true, points: 8 }
+  }
+};
+const STD_ROOMS = [
+  ['LDK', 1, 0, 0, 10], ['BEDROOM_MAIN', 1, 0, 0, 5], ['BEDROOM_CHILD', 2, 0, 0, 5], ['BATHROOM', 1, 0, 0, 3],
+  ['WASHROOM', 1, 0, 0, 3], ['TOILET', 1, 0, 0, 3], ['ENTRANCE', 1, 0, 0, 3], ['STAIRS', 1, 0, 0, 2]
+];
+
+const LEGAL = [
+  ['fitSite', '敷地内に収まっている【必須】', '収まっていない場合は論外とし、採点しません', null],
+  ['kenpei', '建蔽率', '1階の建築面積 ÷ 敷地面積', ['max', '%', 10, 100, 5]],
+  ['yoseki', '容積率の上限', '延べ面積 ÷ 敷地面積(この値で延べ面積の上限が決まります)', ['max', '%以下', 50, 400, 10]],
+  ['totalArea', '延べ面積の範囲', '上限は容積率で決まる面積以内。下限は㎡または上限の%で指定', 'area'],
+  ['parking', '駐車台数', '駐車スペースを必要台数以上確保(1台=約13マス以上)', ['cars', '台', 1, 4, 1]]
+];
+const PLAN = [
+  ['lifeFlow', '生活動線を作図し診断を満たす', '作図した生活動線の診断が最低点以上', ['minScore', '点以上', 10, 100, 5]],
+  ['choreFlow', '家事動線を作図し診断を満たす', '作図した家事動線の診断が最低点以上', ['minScore', '点以上', 10, 100, 5]],
+  ['stairsAligned', '1階と2階の階段位置を一致させる', '2階建て以上のとき', null],
+  ['daylight', '居室の採光を確保する', '採光診断が最低点以上', ['minScore', '点以上', 10, 100, 5]],
+  ['ldkSouth', 'LDK(またはリビング)を南側に配置', '南側の外壁に面している', null],
+  ['sanitaryClustered', '水回り(浴室・洗面・トイレ)を近くにまとめる', '同じ階で隣り合うように配置', null],
+  ['kitchenWash', 'キッチンと洗面脱衣室を隣接させる', '家事動線。LDKのキッチン部分でも可', null]
+];
+
+function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), 2400); }
+function nv(id, d) { const v = parseFloat($(id).value); return isFinite(v) ? v : d; }
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+function condRow(key, name, hint, spec, obj) {
+  const c = (obj || S.c)[key];
+  const row = document.createElement('div');
+  const isGate = key === 'fitSite' || (key === 'floors' && !obj);
+  row.className = 'cond' + (spec === 'area' ? ' area' : '') + (spec === 'park' ? ' park' : '') + (c.on ? '' : ' off');
+  let valHtml = '';
+  if (spec === 'area') valHtml = `下限 <input type="number" data-k="minVal" value="${c.minVal}" min="1" max="600"><select data-k="minUnit"><option value="sqm" ${c.minUnit === 'sqm' ? 'selected' : ''}>㎡</option><option value="pct" ${c.minUnit === 'pct' ? 'selected' : ''}>上限の%</option></select> 上限 <input type="number" data-k="maxSqm" value="${c.maxSqm}" min="20" max="600"> ㎡<div id="areaNote" class="note" style="font-size:11px;color:#fbbf24"></div>`;
+  else if (spec === 'park') valHtml = `直角<input type="number" data-k="perpendicular" value="${c.perpendicular}" min="0" max="3" style="width:54px"> 平行<input type="number" data-k="parallel" value="${c.parallel}" min="0" max="3" style="width:54px"> 縦列<select data-k="tandem">${[0, 2, 3].map(v => `<option value="${v}" ${c.tandem === v ? 'selected' : ''}>${v}</option>`).join('')}</select> 台`;
+  else if (spec && Array.isArray(spec[2])) valHtml = `<select data-k="${spec[0]}">${spec[2].map(v => `<option value="${v}" ${c[spec[0]] === v ? 'selected' : ''}>${v}</option>`).join('')}</select> ${spec[1]}`;
+  else if (spec) valHtml = `<input type="number" data-k="${spec[0]}" value="${c[spec[0]]}" min="${spec[2]}" max="${spec[3]}" step="${spec[4]}"> ${spec[1]}`;
+  row.innerHTML = `<input type="checkbox" ${c.on ? 'checked' : ''} data-k="on"><div class="nm">${name}<small>${hint}</small></div><div class="val">${valHtml}</div>${isGate ? '<div class="pt" style="font-size:11px;line-height:1.3">配点なし<br>(満たさないと採点不可)</div>' : `<div class="pt">配点<input type="number" data-k="points" value="${c.points}" min="1" max="100"></div>`}`;
+  row.addEventListener('input', e => {
+    const k = e.target.dataset.k; if (!k) return;
+    c[k] = k === 'on' ? e.target.checked : k === 'minUnit' ? e.target.value : (parseFloat(e.target.value) || 0);
+    if (k === 'on') row.classList.toggle('off', !c.on);
+    refresh();
+    if (key === 'floors' && (!obj || S.kind === 'both')) { fixRoomFloors(); buildRoomRows(); }
+  });
+  return row;
+}
+const HCONDS1 = [
+  ['floors', '階数', 'この階数で設計する', ['count', '階', 1, 3, 1]],
+  ['bcr', '建蔽率の指定', '建蔽率が指定値以内(住宅を配置した場合)', ['target', '%以下', [40, 50, 60, 70, 80]]],
+  ['far', '容積率の指定', '容積率が指定値と前面道路幅員×0.4の小さいほう以内', ['value', '%以下', [50, 60, 80, 100, 150, 200]]],
+  ['parking', '駐車条件', '直角・平行・縦列の必要台数(診断で判定)', 'park']
+];
+const HCONDS2 = [
+  ['planScore', '配置計画の診断スコア', '「配置を診断する」の総合スコアが基準以上', ['min', '点以上', 10, 100, 5]],
+  ['blockScore', 'ブロックプランの診断スコア', '「ゾーニングを診断する」の総合スコアが基準以上', ['min', '点以上', 10, 100, 5]],
+  ['lifeRoute', '生活動線を作図する', 'ブロックプランで生活動線を作図', null],
+  ['choreRoute', '家事動線を作図する', 'ブロックプランで家事動線を作図', null]
+];
+function buildHConds() {
+  const A = $('hConds1'), B = $('hConds2'); A.innerHTML = ''; B.innerHTML = '';
+  HCONDS1.forEach(a => A.appendChild(condRow(a[0], a[1], a[2], a[3], S.h)));
+  HCONDS2.forEach(a => B.appendChild(condRow(a[0], a[1], a[2], a[3], S.h)));
+}
+const SEC_TITLES = {
+  madori: { secM3: '法規・規模の条件', secM4: '階数と必要室', secM5: '計画条件(動線・採光など)' },
+  haichi: { secH1: '配置計画の条件(階数・建蔽率・容積率・駐車)', secH2: '診断スコア・ブロックプラン・動線の条件' },
+  both: { secH1: '【配置計画】共通条件(階数・建蔽率・容積率・駐車)', secH2: '【配置計画】診断スコア・ブロックプラン・動線', secM3: '【間取り】法規・規模の条件', secM4: '【間取り】必要室', secM5: '【間取り】計画条件(動線・採光など)' }
+};
+const SEC_ORDER = { madori: ['secM3', 'secM4', 'secM5'], haichi: ['secH1', 'secH2'], both: ['secH1', 'secH2', 'secM3', 'secM4', 'secM5'] };
+function setKind(k) {
+  S.kind = k === 'haichi' ? 'haichi' : k === 'both' ? 'both' : 'madori';
+  { const order = SEC_ORDER[S.kind], par = $('secM3').parentNode;
+    ['secM3', 'secM4', 'secM5', 'secH1', 'secH2'].forEach(id => { $(id).style.display = order.includes(id) ? '' : 'none'; });
+    order.forEach((id, i) => { par.appendChild($(id)); $(id).querySelector('h2').innerHTML = `<span class="n">${i + 3}</span>${SEC_TITLES[S.kind][id]}`; });
+    $('bothNote3').style.display = S.kind === 'both' ? '' : 'none';
+    $('floorNote').textContent = S.kind === 'both' ? '階数は上の「配置計画」の共通条件で設定した階数が使われます。その階数の範囲で、必要室と配置階を選びます。' : '① 先に階数を決めます。 ② その階数の範囲で、必要室と配置階を選びます。'; }
+  $('kindBoth').classList.toggle('on', S.kind === 'both');
+  $('kindMadori').classList.toggle('on', S.kind === 'madori'); $('kindHaichi').classList.toggle('on', S.kind === 'haichi');
+  $('subTxt').textContent = S.kind === 'both' ? '配置計画・ブロックプラン→間取りの連動課題を設定して、生徒の2つのアプリに同じ課題を配布します' : S.kind === 'haichi' ? '配置計画・ブロックプランの課題条件を設定して、生徒の「住宅配置計画トレーニング」に配布します' : '設計条件を設定して、生徒の「住宅間取り作成トレーニング」に配布します';
+  syncModule();
+  if (S.kind !== 'madori') { S.roadWidths = Object.fromEntries(Object.entries(S.roadWidths).map(([d, w]) => [d, [3, 4, 6].reduce((b, v) => Math.abs(v - w) < Math.abs(b - w) ? v : b, 6)])); S.width = Math.min(20, S.width); S.height = Math.min(20, S.height); $('sw').max = 20; $('sh').max = 20; $('sw').value = S.width; $('sh').value = S.height; }
+  else { $('sw').max = 40; $('sh').max = 24; }
+  syncShared(); buildConds(); buildRoomRows();
+  { const hz = S.kind === 'haichi';
+    if (S.kind === 'both') { $('howTo').innerHTML = '<li><b>同じ課題ファイル(.json)・課題コード・QRコード</b>を配布します。生徒は、①配置計画アプリの「📨 課題」で読み込み、配置計画・ブロックプランを作図 → ②間取りアプリの「シナリオ」→「課題ファイルを読み込む」(またはQR・課題コード)で同じ課題を読み込み、間取りを作図します。</li><li>敷地・階数・建蔽率・容積率・駐車の条件は、2つのアプリで同じ値になります。</li><li>課題コードやQRは、必要室が多いと文字数が増えます。QRが大きすぎる場合は課題ファイルで配布してください。</li>'; $('codeHow').textContent = 'QRコードか文字列を配布します。生徒は配置計画アプリ・間取りアプリのどちらでも、QRコードの読み取りまたは課題コードの貼り付けで同じ課題を読み込めます。'; }
+    else $('howTo').innerHTML = hz
+      ? '<li><b>課題ファイル(.json)</b>を書き出し、Teams・Classroom・メールなどで配布。生徒は配置計画アプリの「📨 課題」→「課題ファイルを読み込む」で開きます。</li><li>ファイルを扱いにくいiPad等では、<b>課題コード</b>や<b>QRコード</b>で配布。生徒は「📨 課題」から課題コード貼り付け・QR読み取りで読み込めます。</li><li>課題ファイルを読み込み直して、条件を直して再配布もできます。</li>'
+      : '<li><b>課題ファイル(.json)</b>を書き出し、Teams・Classroom・メールなどで配布。生徒は間取りアプリの「シナリオ」→「課題ファイルを読み込む」で開きます。</li><li>ファイルを扱いにくいiPad等では、<b>課題コード</b>や<b>QRコード</b>で配布。生徒は「QRコードを読み取る」「課題コードを貼り付け」で読み込めます。</li><li>課題ファイルを読み込み直して、条件を直して再配布もできます。</li>';
+    if (S.kind !== 'both') $('codeHow').textContent = hz ? 'QRコードか文字列を配布します。生徒は配置計画アプリの「📨 課題」から、QRコードの読み取りまたは課題コードの貼り付けで読み込みます。' : 'QRコードか文字列を配布します。生徒は間取りアプリの「QRコードを読み取る」または「課題コードを貼り付け」で読み込みます。'; }
+  renderRoadRow(); refresh();
+}
+function syncShared() {
+  if (S.kind !== 'both') return;
+  const h = S.h, c = S.c;
+  Object.assign(c.floors, { on: h.floors.on, count: h.floors.count, points: h.floors.points });
+  Object.assign(c.kenpei, { on: h.bcr.on, max: h.bcr.target, points: h.bcr.points });
+  Object.assign(c.yoseki, { on: h.far.on, max: h.far.value, points: h.far.points });
+  const n = (h.parking.perpendicular || 0) + (h.parking.parallel || 0) + (h.parking.tandem || 0);
+  Object.assign(c.parking, { on: h.parking.on, cars: clamp(n, 1, 4), points: h.parking.points });
+}
+function buildConds() {
+  const L = $('legalConds'), P = $('planConds'); L.innerHTML = ''; P.innerHTML = '';
+  const SH = S.kind === 'both' ? ['kenpei', 'yoseki', 'parking'] : [];
+  LEGAL.forEach(a => { if (!SH.includes(a[0])) L.appendChild(condRow(...a)); });
+  PLAN.forEach(a => P.appendChild(condRow(...a)));
+  const F = $('floorCond'); F.innerHTML = ''; if (S.kind !== 'both') F.appendChild(condRow('floors', '階数【必須】', '指定した階数で設計されていない場合は採点しません', ['count', '階', 1, 3, 1]));
+}
+let ACTIVE_TAB = 1;
+function stdRooms() {
+  const multi = floorMax() > 1;
+  return STD_ROOMS.map(([type, count, floor, minMasu, points]) => {
+    if (multi) floor = (type === 'BEDROOM_MAIN' || type === 'BEDROOM_CHILD') ? 2 : 1;
+    return { type, count, floor, minMasu, points };
+  });
+}
+function floorMax() { return S.c.floors.on ? clamp(Math.round(S.c.floors.count) || 1, 1, 3) : 3; }
+function fixRoomFloors() {
+  const m = floorMax(); let n = 0;
+  S.rooms.forEach(r => { if (r.floor > m) { r.floor = 0; n++; } });
+  S.rooms.forEach(r => { if (r.type === 'VOID' && r.floor < 2) r.type = ''; });
+  if (n) { toast(`${m}階建てを超える階の指定 ${n}件を「指定なし」に戻しました`); refresh(); }
+}
+function buildRoomRows() {
+  S.rooms.forEach(r => { if (r.minMasu == null) r.minMasu = Math.round((r.minJyo || 0) * 2); });
+  const fm = floorMax(), multi = fm > 1;
+  if (ACTIVE_TAB > fm || ACTIVE_TAB < 0) ACTIVE_TAB = 1;
+  if (!multi) ACTIVE_TAB = 0;
+  // 階タブ
+  const tabs = $('floorTabs'); tabs.innerHTML = '';
+  if (multi) {
+    const mk = (f, label) => {
+      const n = S.rooms.filter(r => r.floor === f).length;
+      const bt = document.createElement('button');
+      bt.className = 'sm' + (ACTIVE_TAB === f ? ' on' : '');
+      bt.style.cssText = ACTIVE_TAB === f ? 'background:#6366f1;color:#fff;border-color:#818cf8;font-weight:700' : '';
+      bt.textContent = `${label}（${n}）`;
+      bt.addEventListener('click', () => { ACTIVE_TAB = f; buildRoomRows(); });
+      tabs.appendChild(bt);
+    };
+    for (let f = 1; f <= fm; f++) mk(f, `${f}階の必要室`);
+    mk(0, '階を問わない');
+  }
+  const tb = $('roomRows'); tb.innerHTML = '';
+  const vis = []; S.rooms.forEach((r, i) => { if (!multi || r.floor === ACTIVE_TAB) vis.push(i); });
+  if (!vis.length) { tb.innerHTML = `<tr><td colspan="6" style="color:var(--muted);padding:10px 4px">${multi ? (ACTIVE_TAB ? ACTIVE_TAB + '階' : '階を問わない') : ''}の必要室はまだありません。「＋ 必要室を追加」で追加します。</td></tr>`; return; }
+  vis.forEach((i, vi) => {
+    const r = S.rooms[i];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="white-space:nowrap"><button class="sm" data-mv="-1" ${vi === 0 ? 'disabled' : ''}>▲</button> <button class="sm" data-mv="1" ${vi === vis.length - 1 ? 'disabled' : ''}>▼</button></td><td><select data-k="type"><option value="" ${r.type ? '' : 'selected'}>必要室を選択</option>${ROOMS.filter(([k]) => k !== 'VOID' || r.floor >= 2).map(([k, n]) => `<option value="${k}" ${k === r.type ? 'selected' : ''}>${n}</option>`).join('')}</select></td>
+      <td><input type="number" data-k="count" value="${r.count}" min="1" max="10" style="width:70px"></td>
+      <td><input type="number" data-k="minMasu" value="${r.minMasu}" min="0" max="80" step="1" style="width:70px"></td>
+      <td><input type="number" data-k="points" value="${r.points}" min="1" max="100" style="width:64px"></td>
+      <td><button class="sm del" data-del="1">✕</button></td>`;
+    tr.addEventListener('input', e => { const k = e.target.dataset.k; if (!k) return; r[k] = k === 'type' ? e.target.value : (parseFloat(e.target.value) || 0); refresh(); });
+    const tn = document.createElement('tr');
+    tn.innerHTML = `<td></td><td colspan="5" style="padding-bottom:8px"><input type="text" data-k="note" maxlength="120" placeholder="条件・ポイント(任意) 例: 南側に配置し、洗面とつなぐ" value="" style="width:100%;font-size:12px"></td>`;
+    tn.querySelector('input').value = r.note || '';
+    tn.querySelector('input').addEventListener('input', e => { r.note = e.target.value; refresh(); });
+    tr.querySelectorAll('[data-mv]').forEach(b => b.addEventListener('click', () => { const j = vis[vi + parseInt(b.dataset.mv)]; if (j === undefined) return; [S.rooms[i], S.rooms[j]] = [S.rooms[j], S.rooms[i]]; buildRoomRows(); refresh(); }));
+    tr.querySelector('[data-del]').addEventListener('click', () => { S.rooms.splice(i, 1); buildRoomRows(); refresh(); });
+    tb.appendChild(tr); tb.appendChild(tn);
+  });
+}
+function buildSite() {
+  const sel = $('pattern'); sel.innerHTML = Object.entries(PATTERNS).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('');
+  sel.value = S.pattern;
+  renderRoadRow();
+}
+function renderRoadRow() {
+  const roads = PATTERNS[S.pattern][1];
+  $('roadRow').innerHTML = roads.map(d => `<label class="f">${DIR_NAME[d]}側 道路幅員<select data-road="${d}">${(S.kind !== 'madori' ? [3, 4, 6] : ROAD_OPTS).map(w => `<option value="${w}" ${S.roadWidths[d] === w ? 'selected' : ''}>${w}m</option>`).join('')}</select></label>`).join('');
+  $('roadRow').querySelectorAll('select').forEach(s => s.addEventListener('change', () => { S.roadWidths[s.dataset.road] = parseFloat(s.value); refresh(); }));
+  const isFlag = S.pattern === 'flag';
+  $('stdDims').style.display = isFlag ? 'none' : ''; $('flagDims').style.display = isFlag ? '' : 'none';
+}
+function siteDims() {
+  if (S.pattern === 'flag') return { w: S.flag.w, h: S.flag.h + S.flag.poleH };
+  return { w: S.width, h: S.height };
+}
+function siteAreaSqm() {
+  const u = S.unitM * S.unitM;
+  if (S.pattern === 'flag') return (S.flag.w * S.flag.h + S.flag.poleW * S.flag.poleH) * u;
+  return S.width * S.height * u;
+}
+
+function areaCap() { return S.c.yoseki.on ? siteAreaSqm() * S.c.yoseki.max / 100 : Infinity; }
+function areaRange() {
+  const t = S.c.totalArea, cap = areaCap();
+  const max = Math.min(t.maxSqm, cap);
+  let min = t.minUnit === 'pct' ? max * t.minVal / 100 : t.minVal;
+  min = Math.min(min, max);
+  const r = v => Math.round(v * 10) / 10;
+  return { min: r(min), max: r(max), cap: cap, capped: t.maxSqm > cap };
+}
+function drawPreview() {
+  const svg = $('prev'); const W = 320, H = 240, pad = 38;
+  const d = siteDims(); const sc = Math.min((W - pad * 2) / d.w, (H - pad * 2) / d.h);
+  const ox = (W - d.w * sc) / 2, oy = (H - d.h * sc) / 2;
+  const roads = PATTERNS[S.pattern][1]; let s = '';
+  const rw = dir => 10 + (S.roadWidths[dir] || 6) * 1.6;
+  roads.forEach(dir => {
+    const t = rw(dir); let x = ox, y = oy, w = d.w * sc, h = d.h * sc;
+    if (dir === 'S') { y = oy + d.h * sc; h = t; } else if (dir === 'N') { y = oy - t; h = t; }
+    else if (dir === 'E') { x = ox + d.w * sc; w = t; } else { x = ox - t; w = t; }
+    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#334155"/>`;
+    const tx = dir === 'S' || dir === 'N' ? x + w / 2 : x + w / 2, ty = dir === 'S' || dir === 'N' ? y + h / 2 + 4 : y + h / 2 + 4;
+    s += `<text x="${tx}" y="${ty}" font-size="10" text-anchor="middle" fill="#cbd5e1">${DIR_NAME[dir]}道路 ${S.roadWidths[dir]}m</text>`;
+  });
+  if (S.pattern === 'flag') {
+    const f = S.flag, poleTop = oy + f.h * sc;
+    s += `<rect x="${ox}" y="${oy}" width="${f.w * sc}" height="${f.h * sc}" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>`;
+    s += `<rect x="${ox + f.poleX * sc}" y="${poleTop}" width="${f.poleW * sc}" height="${f.poleH * sc}" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>`;
+  } else {
+    s += `<rect x="${ox}" y="${oy}" width="${d.w * sc}" height="${d.h * sc}" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>`;
+  }
+  s += `<text x="${W / 2}" y="${H - 6}" font-size="11" text-anchor="middle" fill="#94a3b8">北が上</text>`;
+  s += `<text x="${W - 14}" y="18" font-size="14" fill="#f43f5e" text-anchor="middle">N↑</text>`;
+  svg.innerHTML = s;
+}
+
+function summaryLinesHaichi() {
+  const L = [], h = S.h, a = siteAreaSqm();
+  L.push(['敷地', `${PATTERNS[S.pattern][0]}・${a.toFixed(1)}㎡(${(a / 3.305785).toFixed(1)}坪)`]);
+  PATTERNS[S.pattern][1].forEach(d => L.push([`${DIR_NAME[d]}側道路`, `幅員${S.roadWidths[d]}m`]));
+  if (h.floors.on) L.push(['階数', `${h.floors.count}階建て`]);
+  if (h.bcr.on) L.push(['建蔽率', `${h.bcr.target}%以下`]);
+  if (h.far.on) L.push(['容積率', `${h.far.value}%以下`]);
+  if (h.parking.on) L.push(['駐車', [h.parking.perpendicular ? `直角${h.parking.perpendicular}台` : '', h.parking.parallel ? `平行${h.parking.parallel}台` : '', h.parking.tandem ? `縦列${h.parking.tandem}台` : ''].filter(Boolean).join('・') || '条件なし']);
+  if (h.planScore.on) L.push(['配置診断', `${h.planScore.min}点以上`]);
+  if (h.blockScore.on) L.push(['ブロック診断', `${h.blockScore.min}点以上`]);
+  if (h.lifeRoute.on) L.push(['生活動線', '作図する']);
+  if (h.choreRoute.on) L.push(['家事動線', '作図する']);
+  return L;
+}
+function summaryLines() {
+  if (S.kind === 'haichi') return summaryLinesHaichi();
+  if (S.kind === 'both') {
+    const dup = ['敷地', 'モジュール', '建蔽率', '容積率', '階数', '駐車'];
+    const ml = summaryLinesMadori().filter(([k]) => !dup.includes(k) && !/側道路$/.test(k));
+    return [['▼ 配置計画・ブロックプラン', '']].concat(summaryLinesHaichi(), [['▼ 間取り', '']], ml);
+  }
+  return summaryLinesMadori();
+}
+function summaryLinesMadori() {
+  const L = [], c = S.c;
+  const a = siteAreaSqm();
+  L.push(['敷地', `${PATTERNS[S.pattern][0]}・${a.toFixed(1)}㎡(${(a / 3.305785).toFixed(1)}坪)`]);
+  L.push(['モジュール', `${S.module === 'meter' ? 'メーター' : S.module === 'custom' ? 'カスタム' : '尺'}モジュール(1マス=${Math.round(S.unitM * 1000)}mm)`]);
+  PATTERNS[S.pattern][1].forEach(d => L.push([`${DIR_NAME[d]}側道路`, `幅員${S.roadWidths[d]}m`]));
+  if (c.kenpei.on) L.push(['建蔽率', `${c.kenpei.max}%以下`]);
+  if (c.yoseki.on) L.push(['容積率', `${c.yoseki.max}%以下`]);
+  if (c.totalArea.on) { const r = areaRange(); L.push(['延べ面積', `${r.min}〜${r.max}㎡`]); }
+  if (c.fitSite.on) L.push(['必須', '建物が敷地内に収まる(満たさないと採点不可)']);
+  if (c.floors.on) L.push(['階数', `${c.floors.count}階建て${S.kind === 'both' ? '' : '(必須・満たさないと採点不可)'}`]);
+  if (c.parking.on) L.push(['駐車', `${c.parking.cars}台以上`]);
+  S.rooms.filter(r => r.type).forEach(r => L.push([ROOM_NAME[r.type], `${r.count}室以上${r.floor ? `(${r.floor}階)` : ''}${r.minMasu ? `・${r.minMasu}マス以上` : ''}${r.note ? '／' + r.note : ''}`]));
+  if (c.lifeFlow.on) L.push(['生活動線', `作図・${c.lifeFlow.minScore}点以上`]);
+  if (c.choreFlow.on) L.push(['家事動線', `作図・${c.choreFlow.minScore}点以上`]);
+  if (c.stairsAligned.on) L.push(['階段', '上下階で位置を一致']);
+  if (c.daylight.on) L.push(['採光', `${c.daylight.minScore}点以上`]);
+  if (c.ldkSouth.on) L.push(['LDK', '南側に配置']);
+  if (c.sanitaryClustered.on) L.push(['水回り', '近くにまとめて配置']);
+  if (c.kitchenWash.on) L.push(['キッチン', '洗面脱衣室と隣接']);
+  return L;
+}
+function hTotalPoints() { let t = 0; Object.values(S.h).forEach(x => { if (x.on) t += x.points; }); return t; }
+function totalPoints() {
+  if (S.kind === 'haichi') { let t = 0; Object.values(S.h).forEach(x => { if (x.on) t += x.points; }); return t; }
+  let t = 0; Object.entries(S.c).forEach(([k, x]) => { if (x.on && k !== 'fitSite' && k !== 'floors') t += x.points; }); S.rooms.forEach(r => { if (r.type) t += r.points; }); return t;
+}
+function refresh() {
+  syncShared();
+  const a = siteAreaSqm();
+  $('areaTxt').textContent = `${a.toFixed(1)}㎡(${(a / 3.305785).toFixed(1)}坪)`;
+  drawPreview();
+  { const n = $('areaNote'); if (n) { const r = areaRange(); n.textContent = (S.c.yoseki.on ? `容積率${S.c.yoseki.max}%の上限面積: ${(areaCap()).toFixed(1)}㎡` + (r.capped ? ` → 上限を${r.max}㎡に制限` : '') + ' ／ ' : '') + `採点範囲: ${r.min}〜${r.max}㎡`; } }
+  $('summary').innerHTML = summaryLines().map(([k, v]) => `<div class="sumline"><span>${k}</span><b>${v}</b></div>`).join('');
+  $('ptTotal').textContent = S.kind === 'both' ? `${hTotalPoints()}(配置)/${totalPoints()}(間取り)` : totalPoints();
+  try { localStorage.setItem('madori-kadai-draft', JSON.stringify(S)); } catch (e) { }
+}
+
+// ---- 出力/入力 ----
+function buildAssignmentHaichi() {
+  const h = S.h, d = siteDims(), cl = (v, a, b) => Math.max(a, Math.min(b, Math.round(v)));
+  const out = {};
+  out.floors = h.floors.on ? { count: cl(h.floors.count, 1, 3), points: h.floors.points } : null;
+  out.bcr = h.bcr.on ? { target: h.bcr.target, points: h.bcr.points } : null;
+  out.far = h.far.on ? { value: h.far.value, points: h.far.points } : null;
+  out.parking = h.parking.on ? { perpendicular: cl(h.parking.perpendicular, 0, 3), parallel: cl(h.parking.parallel, 0, 3), tandem: h.parking.tandem, points: h.parking.points } : null;
+  out.planScore = h.planScore.on ? { min: h.planScore.min, points: h.planScore.points } : null;
+  out.blockScore = h.blockScore.on ? { min: h.blockScore.min, points: h.blockScore.points } : null;
+  out.lifeRoute = h.lifeRoute.on ? { points: h.lifeRoute.points } : null;
+  out.choreRoute = h.choreRoute.on ? { points: h.choreRoute.points } : null;
+  const f = S.flag;
+  return {
+    format: 'madori-assignment', kind: 'haichi', version: 1,
+    title: S.title.trim() || '(無題の課題)', description: S.desc.trim(), author: S.author.trim(), created: new Date().toISOString().slice(0, 10),
+    site: { pattern: S.pattern, width: cl(S.width, 6, 20), height: cl(S.height, 6, 20), roadWidths: Object.assign({}, S.roadWidths), flag: { w: cl(f.w, 5, 14), h: cl(f.h, 5, 14), poleW: cl(f.poleW, 3, 6), poleX: Math.max(0, f.poleX), poleH: cl(f.poleH, 2, 10) } },
+    gridModule: modName(), gridUnitM: S.unitM,
+    haichi: out
+  };
+}
+function buildAssignment() {
+  if (S.kind === 'haichi') return buildAssignmentHaichi();
+  syncShared();
+  const c = S.c, o = {};
+  const d = siteDims();
+  const cond = {};
+  cond.fitSite = c.fitSite.on ? { required: true } : null;
+  cond.kenpei = c.kenpei.on ? { max: c.kenpei.max, points: c.kenpei.points } : null;
+  cond.yoseki = c.yoseki.on ? { max: c.yoseki.max, points: c.yoseki.points } : null;
+  cond.totalArea = c.totalArea.on ? (() => { const r = areaRange(); return { minSqm: r.min, maxSqm: r.max, minPct: c.totalArea.minUnit === 'pct' ? c.totalArea.minVal : null, points: c.totalArea.points }; })() : null;
+  cond.floors = c.floors.on ? { count: clamp(Math.round(c.floors.count), 1, 3), required: true } : null;
+  cond.parking = c.parking.on ? { cars: clamp(Math.round(c.parking.cars), 1, 4), points: c.parking.points } : null;
+  cond.rooms = S.rooms.filter(r => r.type).map(r => ({ type: r.type, note: (r.note || '').trim(), count: Math.max(1, Math.round(r.count)), floor: Math.round(r.floor), minMasu: Math.max(0, Math.round(r.minMasu || 0)), minJyo: Math.max(0, Math.round(r.minMasu || 0)) / 2, points: Math.max(1, r.points) }));
+  cond.lifeFlow = c.lifeFlow.on ? { minScore: c.lifeFlow.minScore, points: c.lifeFlow.points } : null;
+  cond.choreFlow = c.choreFlow.on ? { minScore: c.choreFlow.minScore, points: c.choreFlow.points } : null;
+  cond.stairsAligned = c.stairsAligned.on ? { points: c.stairsAligned.points } : null;
+  cond.daylight = c.daylight.on ? { minScore: c.daylight.minScore, points: c.daylight.points } : null;
+  cond.ldkSouth = c.ldkSouth.on ? { points: c.ldkSouth.points } : null;
+  cond.sanitaryClustered = c.sanitaryClustered.on ? { points: c.sanitaryClustered.points } : null;
+  cond.kitchenWash = c.kitchenWash.on ? { points: c.kitchenWash.points } : null;
+  const out0 = {
+    format: 'madori-assignment', version: 1,
+    title: S.title.trim() || '(無題の課題)', description: S.desc.trim(), author: S.author.trim(), created: new Date().toISOString().slice(0, 10),
+    site: { pattern: S.pattern, width: d.w, height: d.h, roadWidths: Object.assign({}, S.roadWidths), flag: Object.assign({}, S.flag) },
+    gridModule: modName(), gridUnitM: S.unitM,
+    conditions: cond
+  };
+  if (S.kind === 'both') {
+    const hh = buildAssignmentHaichi();
+    out0.kind = 'combined'; out0.haichi = hh.haichi;
+    out0.site.flag = hh.site.flag;
+    if (S.pattern === 'flag') { out0.site.width = hh.site.flag.w; out0.site.height = hh.site.flag.h + hh.site.flag.poleH; }
+  }
+  return out0;
+}
+function loadAssignment(a) {
+  if (!a || a.format !== 'madori-assignment') throw new Error('課題ファイルではありません');
+  S.kind = a.kind === 'haichi' ? 'haichi' : a.kind === 'combined' ? 'both' : 'madori';
+  S.title = a.title || ''; S.desc = a.description || ''; S.author = a.author || '';
+  const st = a.site || {};
+  S.pattern = PATTERNS[st.pattern] ? st.pattern : 'south';
+  S.roadWidths = Object.assign({ S: 6, N: 6, E: 6, W: 6 }, st.roadWidths || {});
+  S.flag = Object.assign({ w: 8, h: 8, poleW: 4, poleX: 0, poleH: 5 }, st.flag || {});
+  S.width = st.width || 12; S.height = st.height || 12;
+  S.module = (a.gridModule === 'meter' || a.gridModule === 'custom') ? a.gridModule : 'shaku';
+  S.unitM = S.module === 'meter' ? 1 : (typeof a.gridUnitM === 'number' && a.gridUnitM >= 0.5 && a.gridUnitM <= 2 ? a.gridUnitM : 0.91);
+  if (S.module === 'custom' && Math.abs(S.unitM - 0.91) < 1e-9) S.module = 'shaku';
+  if (S.kind === 'haichi' || S.kind === 'both') {
+    const hh = a.haichi || {};
+    Object.keys(S.h).forEach(key => { const t = S.h[key], v = hh[key]; if (v) { t.on = true; Object.assign(t, v); if (key === 'bcr' || key === 'far') { /* keep */ } } else t.on = false; });
+    if (S.kind === 'haichi') { syncForm(); return; }
+  }
+  const k = a.conditions || {};
+  const set = (key, v) => { const t = S.c[key]; if (v) { t.on = true; Object.assign(t, v); if (key === 'totalArea') { if (v.minPct != null) { t.minUnit = 'pct'; t.minVal = v.minPct; } else { t.minUnit = 'sqm'; t.minVal = v.minSqm || 80; } } } else t.on = false; };
+  Object.keys(S.c).forEach(key => set(key, k[key]));
+  S.rooms = (k.rooms || []).filter(r => ROOM_NAME[r.type]).map(r => ({ type: r.type, count: r.count || 1, floor: r.floor || 0, minMasu: r.minMasu != null ? r.minMasu : Math.round((r.minJyo || 0) * 2), points: r.points || 3, note: r.note || '' }));
+  syncForm();
+}
+function modName() { return Math.abs(S.unitM - 0.91) < 1e-9 ? 'shaku' : Math.abs(S.unitM - 1) < 1e-9 ? 'meter' : 'custom'; }
+function syncModule() {
+  const hz = false;
+  $('grid').value = S.module; $('grid').disabled = false;
+  $('gridMm').value = Math.round(S.unitM * 1000);
+  $('gridCustomWrap').style.display = (!hz && S.module === 'custom') ? '' : 'none';
+  const n = $('gridNote'); n.style.display = hz ? '' : 'none'; n.textContent = hz ? '※配置計画アプリは尺モジュール(910mm)固定です' : '';
+}
+function syncForm() {
+  $('title').value = S.title; $('desc').value = S.desc; $('author').value = S.author;
+  $('pattern').value = S.pattern; $('sw').value = S.width; $('sh').value = S.height;
+  $('fw').value = S.flag.w; $('fh').value = S.flag.h; $('fpw').value = S.flag.poleW; $('fpx').value = S.flag.poleX; $('fph').value = S.flag.poleH;
+  renderRoadRow(); buildConds(); buildHConds(); buildRoomRows(); setKind(S.kind);
+}
+function encodeCode(a) {
+  const bytes = pako.deflateRaw(new TextEncoder().encode(JSON.stringify(a)), { level: 9 });
+  let bin = ''; bytes.forEach(x => bin += String.fromCharCode(x));
+  return 'MADORI-KADAI2:' + btoa(bin);
+}
+function decodeCode(t) {
+  t = (t || '').trim();
+  let i = t.indexOf('MADORI-KADAI2:');
+  if (i >= 0) {
+    const bin = atob(t.slice(i + 14).replace(/\s+/g, '')); const u = new Uint8Array(bin.length);
+    for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
+    return JSON.parse(new TextDecoder().decode(pako.inflateRaw(u)));
+  }
+  i = t.indexOf('MADORI-KADAI1:'); if (i < 0) throw new Error('課題コードの形式が違います');
+  return JSON.parse(decodeURIComponent(escape(atob(t.slice(i + 14).replace(/\s+/g, '')))));
+}
+
+// ---- QRコード ----
+let CUR_QR = null, CUR_TITLE = '';
+function makeQR(text) {
+  for (const ecc of ['L']) { try { const q = qrcode(0, ecc); q.addData(text, 'Byte'); q.make(); return q; } catch (e) {} }
+  return null;
+}
+function drawQR(cv, q, cell, caption) {
+  const n = q.getModuleCount(), quiet = 4, size = cell * (n + quiet * 2), capH = caption ? Math.round(cell * 5 + 30) : 0;
+  cv.width = size; cv.height = size + capH;
+  const c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, cv.width, cv.height); c.fillStyle = '#000';
+  for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q.isDark(r, k)) c.fillRect((k + quiet) * cell, (r + quiet) * cell, cell, cell);
+  if (caption) { c.fillStyle = '#000'; c.font = `700 ${Math.round(cell * 3)}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(caption, size / 2, size + capH / 2 - cell, size - 20); }
+}
+async function saveFile(name, blob, dataUrl) {
+  try { const d = window.claude && await window.claude.use('downloads'); if (d) { await d.save({ filename: name, data: blob }); return true; } } catch (e) { if (e && e.code === 'declined') return false; }
+  const u = dataUrl || URL.createObjectURL(blob); const el = document.createElement('a'); el.href = u; el.download = name;
+  document.body.appendChild(el); el.click(); el.remove(); if (!dataUrl) setTimeout(() => URL.revokeObjectURL(u), 4000); return true;
+}
+function showQRFull() {
+  if (!CUR_QR) return;
+  try { $('dlgCode').close(); } catch (e) {}
+  const ov = $('qrFull'), cv = $('qrBig'); ov.style.display = 'flex';
+  const fit = () => {
+    const px = Math.floor(Math.min(innerWidth, innerHeight - 36) - 8), dpr = window.devicePixelRatio || 1, n = CUR_QR.getModuleCount();
+    drawQR(cv, CUR_QR, Math.max(2, Math.floor(px * dpr / (n + 8))), '');
+    cv.style.width = cv.style.height = px + 'px'; cv.style.imageRendering = 'pixelated';
+  };
+  fit(); $('qrBigCap').textContent = CUR_TITLE; window.__qrFit = fit; addEventListener('resize', fit);
+  try { ov.requestFullscreen && ov.requestFullscreen().catch(() => {}); } catch (e) {}
+}
+function hideQRFull() { if ($('qrFull').style.display === 'none') return; $('qrFull').style.display = 'none'; try { $('dlgCode').showModal(); } catch (e) {} removeEventListener('resize', window.__qrFit); try { document.fullscreenElement && document.exitFullscreen(); } catch (e) {} }
+$('qrFull').addEventListener('click', hideQRFull);
+addEventListener('keydown', e => { if (e.key === 'Escape') hideQRFull(); });
+$('qrFullBtn').addEventListener('click', showQRFull);
+$('qrSaveBtn').addEventListener('click', () => {
+  if (!CUR_QR) return;
+  const n = CUR_QR.getModuleCount(), cv = document.createElement('canvas');
+  drawQR(cv, CUR_QR, Math.max(8, Math.ceil(1400 / (n + 8))), CUR_TITLE);
+  const url = cv.toDataURL('image/png'), bin = atob(url.split(',')[1]), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  saveFile(`課題QR_${CUR_TITLE.replace(/[\\/:*?"<>|\s]+/g, '_') || '課題'}.png`, new Blob([u8], { type: 'image/png' }), url).then(ok => { if (ok) toast('QR画像を保存しました'); });
+});
+function buildQRPreview(code, title) {
+  CUR_QR = makeQR(code); CUR_TITLE = title || '';
+  const has = !!CUR_QR;
+  $('qrCanvas').style.display = has ? '' : 'none'; $('qrFullBtn').disabled = $('qrSaveBtn').disabled = !has;
+  if (has) { drawQR($('qrCanvas'), CUR_QR, 6, ''); $('qrInfo').textContent = `QRコード(${CUR_QR.getModuleCount()}×${CUR_QR.getModuleCount()}マス・コード ${code.length}文字)。プロジェクターで映して読み取らせます。`; }
+  else $('qrInfo').textContent = '条件の文章量が多く、QRコードにできませんでした。コメントを短くするか、課題ファイル/課題コードで配布してください。';
+}
+
+// ---- イベント ----
+['title', 'desc', 'author'].forEach(id => $(id).addEventListener('input', () => { S[id === 'desc' ? 'desc' : id] = $(id).value; refresh(); }));
+$('grid').addEventListener('change', () => {
+  S.module = $('grid').value;
+  S.unitM = S.module === 'meter' ? 1 : S.module === 'shaku' ? 0.91 : S.unitM;
+  syncModule(); refresh();
+});
+$('gridMm').addEventListener('input', () => {
+  const v = parseFloat($('gridMm').value);
+  if (v >= 500 && v <= 2000) { S.unitM = v / 1000; refresh(); }
+});
+$('pattern').addEventListener('change', () => {
+  S.pattern = $('pattern').value;
+  if (S.pattern.startsWith('narrow')) { S.width = 8; S.height = 14; } else if (S.pattern.startsWith('wide')) { S.width = 14; S.height = 8; }
+  else if (S.pattern !== 'flag') { S.width = 12; S.height = 12; }
+  $('sw').value = S.width; $('sh').value = S.height; renderRoadRow(); refresh();
+});
+$('sw').addEventListener('input', () => { S.width = clamp(Math.round(nv('sw', 12)), 6, 40); refresh(); });
+$('sh').addEventListener('input', () => { S.height = clamp(Math.round(nv('sh', 12)), 6, 24); refresh(); });
+[['fw', 'w', 4, 30], ['fh', 'h', 4, 20], ['fpw', 'poleW', 2, 8], ['fpx', 'poleX', 0, 30], ['fph', 'poleH', 2, 12]].forEach(([id, k, a, b]) => $(id).addEventListener('input', () => { S.flag[k] = clamp(Math.round(nv(id, a)), a, b); refresh(); }));
+$('addRoom').addEventListener('click', () => { S.rooms.push({ type: '', note: '', count: 1, floor: floorMax() > 1 ? ACTIVE_TAB : 0, minMasu: 0, points: 5 }); buildRoomRows(); refresh(); });
+$('presetStd').addEventListener('click', () => { S.rooms = stdRooms(); buildRoomRows(); refresh(); toast('標準的な住宅セットを入れました'); });
+$('clearRooms').addEventListener('click', () => { S.rooms = []; buildRoomRows(); refresh(); });
+function checkReady() {
+  if (S.kind === 'haichi') {
+    if (!S.title.trim()) { toast('課題名を入力してください'); $('title').focus(); return false; }
+    if (totalPoints() <= 0) { toast('採点する条件を1つ以上選んでください'); return false; }
+    return true;
+  }
+  if (S.kind === 'both' && hTotalPoints() <= 0) { toast('配置計画側で採点する条件を1つ以上選んでください'); return false; }
+  if (S.rooms.some(r => !r.type)) { toast('「必要室を選択」のままの行があります。室を選ぶか✕で消してください'); return false; }
+  if (!S.title.trim()) { toast('課題名を入力してください'); $('title').focus(); return false; }
+  if (totalPoints() <= 0) { toast('採点する条件を1つ以上選んでください'); return false; }
+  return true;
+}
+$('btnDownload').addEventListener('click', () => {
+  if (!checkReady()) return;
+  const a = buildAssignment();
+  saveFile(`課題_${a.title.replace(/[\\/:*?"<>|\s]+/g, '_')}.json`, new Blob([JSON.stringify(a, null, 1)], { type: 'application/json' }), 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(a, null, 1))).then(ok => { if (ok) toast('課題ファイルを書き出しました'); });
+});
+$('btnCode').addEventListener('click', () => { if (!checkReady()) return; const a = buildAssignment(); const code = encodeCode(a); $('codeOut').value = code; buildQRPreview(code, a.title); $('dlgCode').showModal(); });
+$('codeClose').addEventListener('click', () => $('dlgCode').close());
+$('codeCopy').addEventListener('click', async () => {
+  const t = $('codeOut'); t.select();
+  try { await navigator.clipboard.writeText(t.value); toast('コピーしました'); } catch (e) { try { document.execCommand('copy'); toast('コピーしました'); } catch (e2) { toast('選択した文字列を手動でコピーしてください'); } }
+});
+$('kindMadori').addEventListener('click', () => setKind('madori'));
+$('kindHaichi').addEventListener('click', () => setKind('haichi'));
+$('kindBoth').addEventListener('click', () => setKind('both'));
+$('btnOpen').addEventListener('click', () => $('dlgOpen').showModal());
+$('openClose').addEventListener('click', () => $('dlgOpen').close());
+$('openApply').addEventListener('click', () => { try { loadAssignment(decodeCode($('codeIn').value)); $('dlgOpen').close(); toast('課題を読み込みました'); } catch (e) { toast('読み込めませんでした: ' + e.message); } });
+$('fileIn').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return; const rd = new FileReader();
+  rd.onload = () => { try { loadAssignment(JSON.parse(rd.result)); $('dlgOpen').close(); toast('課題を読み込みました'); } catch (err) { toast('読み込めませんでした: ' + err.message); } };
+  rd.readAsText(f); e.target.value = '';
+});
+
+// 初期化
+buildSite(); buildConds(); S.rooms = stdRooms();
+try { const d = JSON.parse(localStorage.getItem('madori-kadai-draft') || 'null'); if (d && d.c && d.rooms) { const hh = d.h; Object.assign(S, d); if (hh) S.h = Object.assign({}, S.h, hh); S.author = ''; if (d.c.totalArea && d.c.totalArea.minVal === undefined) { d.c.totalArea.minVal = d.c.totalArea.minSqm || 80; d.c.totalArea.minUnit = 'sqm'; } } } catch (e) { }
+syncForm();
+</script>
+</body>
+</html>
